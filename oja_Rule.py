@@ -198,4 +198,4 @@ def run_oja(num_points, num_dimensions = 2, stds=None, initial_weights=None, lea
 
 if __name__ == "__main__":
     #run_oja(num_points=1000, do_dataPlot='true')
-    run_oja(num_points=5000, num_dimensions=3)
+    run_oja(num_points=10000, num_dimensions=10)
