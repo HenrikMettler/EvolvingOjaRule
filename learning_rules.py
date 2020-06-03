@@ -3,97 +3,26 @@ import numpy as np
 import matplotlib
 
 matplotlib.use("TkAgg")
-
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 
 
-def oja_rule(input_data, initial_weights=None, learning_rate=0.005):
-    """Implement Oja linearized learning rule
+def initialize_weights(initial_weights, n):
 
-    Args:
-        input_data (numpy array): An m by n array of datapoints.
-            -m: Number of data points
-            -n: Number of presynaptic inputs
-        initial_weights (float, optional): initial weight vector
-        learning_rate (float, optional): learning rate, default 0.005
-
-    Returns:
-        weights (numpy array): m by n, time course of the weight vector
-        y (numpy array): time course of the output over learning"""
-
-    m = np.size(input_data, 0)
-    n = np.size(input_data, 1)
-
-    # set initial_weight if none
     if initial_weights is None:
-        initial_weights = (
-            2 * np.random.random_sample(n) - 1
-        )  # random values between -1,1
-    initial_weights = initial_weights / np.sqrt(
-        np.sum(np.square(initial_weights))
-    )  # rescale the initial weights to squared sum 1
+        initial_weights = np.random.uniform(-1, 1, size=n)
 
-    y = np.zeros([m, 1])  # initialize y
-    weights = np.zeros([m, n])
-    w = initial_weights
-    for i in range(0, len(input_data)):
-        weights[i] = w
-        y[i] = np.dot(
-            w, input_data[i]
-        )  # output: postsynaptic firing rate of a linear neuron.
-        w += learning_rate * y[i] * (input_data[i] - y[i] * w)
-    return weights, y
-
-
-def normalized_hebbian_rule(w, input_data, y, learning_rate=0.005):
-    """ learn with the normalized hebbian rule (Oja-paper equation 2)
-
-     Args:
-        w: weight vector before the update
-        input_data (numpy array): An 1 by n array of presynaptic inputs.
-        y (scalar): output at the previous time step
-        learning_rate (float, optional): learning rate, default 0.005
-
-    Returns:
-        weights (numpy array): m by n, time course of the weight vector
-        y (numpy array): time course of the output over learning"""
-
-    m = np.size(input_data, 0)
-    n = np.size(input_data, 1)
-
-    # set initial_weight if none
-    if initial_weights is None:
-        initial_weights = (
-            2 * np.random.random_sample(n) - 1
-        )  # random values between -1,1
-    initial_weights = initial_weights / np.sqrt(
-        np.sum(np.square(initial_weights))
-    )  # rescale the initial weights to squared sum 1
-
-    y = np.zeros([m, 1])  # initialize y
-    weights = np.zeros([m, n])
-    w = initial_weights
-    for i in range(0, len(input_data)):
-        weights[i] = w
-        y[i] = np.dot(
-            w, input_data[i]
-        )  # output: postsynaptic firing rate of a linear neuron.
-        scaling_factor = np.sqrt(
-            np.sum(np.square([weights[i] + learning_rate * y[i] * input_data[i]]))
-        )
-        w = w + learning_rate * y * input_data[i] / scaling_factor
-    return weights, y
+    # rescale the initial weights to squared sum 1
+    return initial_weights / np.sqrt(np.sum(initial_weights ** 2))
 
 
 def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate=0.005):
     """ learn weights
-
      Args:
         input_data (numpy array): An m by n array of datapoints.
             - m: Number of data points
             - n: Number of presynaptic inputs
-        learning_rule (function): determines the learning rule to be used. Current options:
+        learning_rule (callable): determines the learning rule to be used. Current options:
             - 'oja_rule'
             - 'hebbian_rule'
             - 'normalized_hebbian_rule'
@@ -107,25 +36,55 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     m = np.size(input_data, 0)
     n = np.size(input_data, 1)
 
-    # set initial_weight if none
-    if initial_weights is None:
-        initial_weights = (
-            2 * np.random.random_sample(n) - 1
-        )  # random values between -1,1
-    initial_weights = initial_weights / np.sqrt(
-        np.sum(np.square(initial_weights))
-    )  # rescale the initial weights to squared sum 1
-
+    w = initialize_weights(initial_weights, n)
     y = np.zeros([m, 1])  # initialize y
     weights = np.zeros([m, n])
-    w = initial_weights
-    for i in range(0, len(input_data)):
+    for i,x in enumerate(input_data):
         weights[i] = w
-        y[i] = np.dot(
-            w, input_data[i]
-        )  # output: postsynaptic firing rate of a linear neuron
-        w = learning_rule(w, input_data[i], y[i], learning_rate)
+        y[i] = np.dot(w,x) # output: postsynaptic firing rate of a linear neuron
+        w = learning_rule(w, x, y[i], learning_rate)
+
     return weights, y
+
+
+def oja_rule(w, x, y, learning_rate=0.005):
+    """Oja linearized learning rule (Oja, 1982: eq.3)
+
+    Args:
+        w (numpy_array): A 1 by n array of weights
+        x (numpy array): A 1 by n array of presynaptic inputs .
+            -n: Number of presynaptic inputs
+        y (scalar): postsynaptic output
+        learning_rate (float, optional): learning rate, default 0.005
+
+    Returns:
+        w_new (numpy array): 1 by n, updated weight vector
+    """
+    w_new = w + learning_rate * y * (x - y * w)
+
+    return w_new
+
+
+def normalized_hebbian_rule(w, x, y, learning_rate=0.005):
+    """ normalized Hebbian rule (Oja, 1982: eq.2)
+
+     Args:
+        w (numpy_array): A 1 by n array of weights
+        x (numpy array): A 1 by n array of presynaptic inputs .
+            -n: Number of presynaptic inputs
+        y (scalar): postsynaptic output
+        learning_rate (float, optional): learning rate, default 0.005
+
+    Returns:
+        w_new (numpy array): 1 by n, updated weight vector"""
+
+
+    scaling_factor = np.sqrt(
+            np.sum(np.square(w + learning_rate * y * x))
+        )
+    w_new = (w + learning_rate * y * x) / scaling_factor
+
+    return w_new
 
 
 def create_input_data(num_points, num_dimensions=2, stds=None):
