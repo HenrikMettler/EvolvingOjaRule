@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import matplotlib
+import sklearn.datasets as datasets
 
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
@@ -16,6 +17,29 @@ def initialize_weights(initial_weights, n):
     return initial_weights / np.sqrt(np.sum(initial_weights ** 2))
 
 
+def create_input_data(num_points, num_dimensions=2):
+    """create an input data set for the learning rules
+
+    Args:
+        num_points: number of data points (m)
+        num_dimensions (default: 2): data point dimension (n)
+
+    Returns:
+        input_data: m by n
+         - m: Number of data points
+         - n: Number of presynaptic inputs"""
+
+    if num_points / num_dimensions <= 10:
+        Warning(
+            "The ration of num_points to num_dimensions is low, should be at least 10"
+        )
+
+    cov_mat = datasets.make_spd_matrix(num_dimensions)
+    input_data = np.random.multivariate_normal(np.zeros(num_dimensions), cov_mat, num_points)
+
+    return input_data
+
+
 def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate=0.005):
     """ learn weights
      Args:
@@ -26,6 +50,7 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
             - 'oja_rule'
             - 'hebbian_rule'
             - 'normalized_hebbian_rule'
+            - ('input_prompt_rule' not implemented yet)
         initial_weights (float, optional): initial weight vector
         learning_rate (float, optional): learning rate, default 0.005
 
@@ -39,9 +64,9 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     w = initialize_weights(initial_weights, n)
     y = np.zeros([m, 1])  # initialize y
     weights = np.zeros([m, n])
-    for i,x in enumerate(input_data):
+    for i, x in enumerate(input_data):
         weights[i] = w
-        y[i] = np.dot(w,x) # output: postsynaptic firing rate of a linear neuron
+        y[i] = np.dot(w, x) # output: postsynaptic firing rate of a linear neuron
         w = learning_rule(w, x, y[i], learning_rate)
 
     return weights, y
@@ -87,36 +112,51 @@ def normalized_hebbian_rule(w, x, y, learning_rate=0.005):
     return w_new
 
 
-def create_input_data(num_points, num_dimensions=2, stds=None):
-    """create an input data set for the learning rules
+def hebbian_rule(w, x, y, learning_rate=0.005):
+    """ Hebbian rule (eg Hebb 1961, Bishop 1995)
 
-    Args:
-        num_points: number of data points (m)
-        stds (optional): std values along the different directions
-        num_dimensions (default: 2): data point dimension (n)
+     Args:
+        w (numpy_array): A 1 by n array of weights
+        x (numpy array): A 1 by n array of presynaptic inputs .
+            -n: Number of presynaptic inputs
+        y (scalar): postsynaptic output
+        learning_rate (float, optional): learning rate, default 0.005
 
     Returns:
-        input_data: m by n
-         - m: Number of data points
-         - n: Number of presynaptic inputs"""
+        w_new (numpy array): 1 by n, updated weight vector"""
 
-    if num_points / num_dimensions <= 10:
-        Warning(
-            "The ration of num_points to num_dimensions is low, should be at least 10"
-        )
+    w_new = (w + learning_rate * y * x)
 
-    if stds is None:
-        stds = np.random.randn(num_dimensions)
-        stds = np.abs(stds)
-        """for idx_dim in range(num_dimensions):
-            stds[idx_dim] = np.random.randn()
-        """
-
-    input_data = np.random.normal(0, stds, [num_points, num_dimensions])
-    return input_data
+    return w_new
 
 
-def plot_oja(input_data, weights, y, do_data_plot="false"):
+def input_prompt_rule(w, x, y, learning_rate=0.005):
+    """ Custom learning rule defined by the User (via imput prompt)
+
+         Args:
+            w (numpy_array): A 1 by n array of weights
+            x (numpy array): A 1 by n array of presynaptic inputs .
+                -n: Number of presynaptic inputs
+            y (scalar): postsynaptic output
+            learning_rate (float, optional): learning rate, default 0.005
+
+        Returns:
+            w_new (numpy array): 1 by n, updated weight vector"""
+
+    temp_delta_w = input('Define your equation for delta_w')
+
+    # Todo: assertions that temp_delta is valid (Criteria: dimensionality,...)
+    is_valid = False
+    if np.size(temp_delta_w) == np.size(w):
+        is_valid = True
+    assert is_valid
+    delta_w = temp_delta_w
+    w_new = w + delta_w
+
+    return w_new
+
+
+def plot_data(input_data, weights, y, do_data_plot=False):
     """
     Plots the amplitude of the angle between weights and PC1 of the input data,
     Plots a view of the data and the evolving axis, if do_dataPlot = true and m = 2
@@ -182,7 +222,7 @@ def plot_oja(input_data, weights, y, do_data_plot="false"):
     if do_data_plot:
         if np.size(input_data, 1) != 2:
             print("Can not do data plot for n != 2")
-            do_data_plot = "false"
+            do_data_plot = False
         else:
             plt.scatter(
                 input_data[:, 0],
@@ -219,21 +259,15 @@ def plot_oja(input_data, weights, y, do_data_plot="false"):
             plt.show()
 
 
-def run_oja(
-    num_points,
-    num_dimensions=2,
-    stds=None,
-    initial_weights=None,
-    learning_rate=0.005,
-    do_dataPlot="false",
-):
+def run(num_points, learning_rule, num_dimensions=2, initial_weights=None, learning_rate=0.005):
 
-    input_data = create_input_data(num_points, num_dimensions, stds)
-    [weights, y] = learn_oja(input_data, initial_weights, learning_rate)
-    plot_oja(input_data, weights, y, do_dataPlot)
-    a = 1
+    input_data = create_input_data(num_points, num_dimensions)
+    [weights, y] = learn_weights(input_data, learning_rule=learning_rule)
+    plot_data(input_data, weights, y)
 
 
 if __name__ == "__main__":
-    # run_oja(num_points=1000, do_dataPlot='true')
-    run_oja(num_points=10000, num_dimensions=10)
+    np.random.seed(11)
+
+    learning_rule = normalized_hebbian_rule
+    run(num_points=10000, learning_rule=learning_rule, num_dimensions=10)
