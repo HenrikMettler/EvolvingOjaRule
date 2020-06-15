@@ -35,7 +35,9 @@ def create_input_data(num_points, num_dimensions=2):
         )
 
     cov_mat = datasets.make_spd_matrix(num_dimensions)
-    input_data = np.random.multivariate_normal(np.zeros(num_dimensions), cov_mat, num_points)
+    input_data = np.random.multivariate_normal(
+        np.zeros(num_dimensions), cov_mat, num_points
+    )
 
     return input_data
 
@@ -66,8 +68,17 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     weights = np.zeros([m, n])
     for i, x in enumerate(input_data):
         weights[i] = w
-        y[i] = np.dot(w, x) # output: postsynaptic firing rate of a linear neuron
-        w = learning_rule(w, x, y[i], learning_rate)
+        y[i] = np.dot(w, x)  # output: postsynaptic firing rate of a linear neuron
+        try:
+            w = learning_rule(w, x, y[i], learning_rate) # this works for the standard learning rules (Oja, (norm) Hebb)
+        except TypeError:
+            # calculate the weight update for every weigt seperately from the cartesian graph
+            for idx in range(n):
+                graph_in = np.array([[x[idx], w[idx], y[i]]]) # Todo: Check order x, w
+                graph_out = learning_rule(graph_in)
+                w[idx] += learning_rate*graph_out
+
+
 
     return weights, y
 
@@ -103,10 +114,7 @@ def normalized_hebbian_rule(w, x, y, learning_rate=0.005):
     Returns:
         w_new (numpy array): 1 by n, updated weight vector"""
 
-
-    scaling_factor = np.sqrt(
-            np.sum(np.square(w + learning_rate * y * x))
-        )
+    scaling_factor = np.sqrt(np.sum(np.square(w + learning_rate * y * x)))
     w_new = (w + learning_rate * y * x) / scaling_factor
 
     return w_new
@@ -125,13 +133,13 @@ def hebbian_rule(w, x, y, learning_rate=0.005):
     Returns:
         w_new (numpy array): 1 by n, updated weight vector"""
 
-    w_new = (w + learning_rate * y * x)
+    w_new = w + learning_rate * y * x
 
     return w_new
 
 
-def input_prompt_rule(w, x, y, learning_rate=0.005):
-    """ Custom learning rule defined by the User (via imput prompt)
+"""def input_prompt_rule(w, x, y, learning_rate=0.005):
+    Custom learning rule defined by the User (via imput prompt)
 
          Args:
             w (numpy_array): A 1 by n array of weights
@@ -141,7 +149,7 @@ def input_prompt_rule(w, x, y, learning_rate=0.005):
             learning_rate (float, optional): learning rate, default 0.005
 
         Returns:
-            w_new (numpy array): 1 by n, updated weight vector"""
+            w_new (numpy array): 1 by n, updated weight vector
 
     temp_delta_w = input('Define your equation for delta_w')
 
@@ -154,6 +162,36 @@ def input_prompt_rule(w, x, y, learning_rate=0.005):
     w_new = w + delta_w
 
     return w_new
+"""
+
+
+def compute_first_pc(input_data):
+    pca = PCA(n_components=1)
+    pca.fit(input_data)
+    return pca.components_[0]
+
+
+def compute_difference_weights_first_pc(weights, pc1):
+    diff_w_pc1 = np.zeros(len(weights))
+    for idx in range(len(weights)):
+        diff_w_pc1[idx] = np.sqrt(np.sum(np.square(weights[idx, :] - pc1)))
+    return diff_w_pc1
+
+
+def compute_angle_weights_first_pc(weights, pc1):
+    angles = np.zeros(len(weights))
+    for idx in range(np.size(weights, 0)):
+        current_weight = weights[idx] / np.linalg.norm(weights[idx])
+        temp_dot_prod = np.dot(pc1, current_weight)
+        angles[idx] = np.arccos(temp_dot_prod)
+    return angles
+
+
+def compute_accumulated_variance(y):
+    acc_var_y = np.zeros([np.size(y)])
+    for idx in range(1, np.size(y, 0)):
+        acc_var_y[idx] = np.var(y[0:idx])
+    return acc_var_y
 
 
 def plot_data(input_data, weights, y, do_data_plot=False):
@@ -168,16 +206,12 @@ def plot_data(input_data, weights, y, do_data_plot=False):
         do_data_plot: boolean, whether to plot 2-dim data or not
     """
 
-    # calculate the PC's of the input data (note: this could be placed out of the function also)
-    pca = PCA(n_components=1)
-    pca.fit(input_data)
-    true_pc1 = pca.components_
+    true_pc1 = compute_first_pc(input_data)
+    diff_w_pc1 = compute_difference_weights_first_pc(weights, true_pc1)
+    angles_w_pc1 = compute_angle_weights_first_pc(weights, true_pc1)
+    acc_var_y = compute_accumulated_variance(y)
 
-    # plot the summed squared diff (weights - PC1)
-    diff_w_pc1 = np.zeros([np.size(weights, 0)])
-    for idx in range(np.size(weights, 0)):
-        diff_w_pc1[idx] = np.sqrt(np.sum(np.square(weights[idx, :] - true_pc1)))
-
+    # plot the mean squared difference
     y_min = 0.9 * np.min(diff_w_pc1)
     y_max = 1.1 * np.max(diff_w_pc1)
     plt.figure(1)
@@ -188,16 +222,11 @@ def plot_data(input_data, weights, y, do_data_plot=False):
     plt.title("Diff w, PC1")
     plt.show()
 
-    # plot the angle between the weights vector and the PC1
-    angles = np.zeros([np.size(weights, 0)])
-    for idx in range(np.size(weights, 0)):
-        current_weight = weights[idx] / np.linalg.norm(weights[idx])
-        temp_dot_prod = np.dot(true_pc1, current_weight)
-        angles[idx] = np.arccos(temp_dot_prod)
-    piLine = 3.14 * np.ones([np.size(weights, 0)])
+    # plot the angle between weight and pc1
+    pi_line = 3.14 * np.ones([np.size(weights, 0)])
     plt.figure(2)
-    plt.plot(angles)
-    plt.plot(piLine)
+    plt.plot(angles_w_pc1)
+    plt.plot(pi_line)
     plt.ylim([0, 4])
     plt.xlabel("sample")
     plt.ylabel("angle in rad")
@@ -206,10 +235,6 @@ def plot_data(input_data, weights, y, do_data_plot=False):
     plt.show()
 
     # plot the (accumulated) variance in y
-    acc_var_y = np.zeros([np.size(y)])
-    for idx in range(1, np.size(y, 0)):
-        acc_var_y[idx] = np.var(y[0:idx])
-
     plt.figure(3)
     plt.plot(acc_var_y)
     plt.ylim([0, 1.2 * np.max(acc_var_y)])
@@ -221,8 +246,7 @@ def plot_data(input_data, weights, y, do_data_plot=False):
     # plot the data and the final weight vector if desired and n_dim == 2
     if do_data_plot:
         if np.size(input_data, 1) != 2:
-            print("Can not do data plot for n != 2")
-            do_data_plot = False
+            raise NotImplementedError("Can not do data plot for n != 2")
         else:
             plt.scatter(
                 input_data[:, 0],
@@ -259,7 +283,13 @@ def plot_data(input_data, weights, y, do_data_plot=False):
             plt.show()
 
 
-def run(num_points, learning_rule, num_dimensions=2, initial_weights=None, learning_rate=0.005):
+def run(
+    num_points,
+    learning_rule,
+    num_dimensions=2,
+    initial_weights=None,
+    learning_rate=0.005,
+):
 
     input_data = create_input_data(num_points, num_dimensions)
     [weights, y] = learn_weights(input_data, learning_rule=learning_rule)
