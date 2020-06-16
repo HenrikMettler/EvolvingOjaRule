@@ -70,15 +70,15 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
         weights[i] = w
         y[i] = np.dot(w, x)  # output: postsynaptic firing rate of a linear neuron
         try:
-            w = learning_rule(w, x, y[i], learning_rate) # this works for the standard learning rules (Oja, (norm) Hebb)
+            w = learning_rule(
+                w, x, y[i], learning_rate
+            )  # this works for the standard learning rules (Oja, (norm) Hebb)
         except TypeError:
-            # calculate the weight update for every weigt seperately from the cartesian graph
+            # calculate the weight update for every weight separately from the cartesian graph
             for idx in range(n):
-                graph_in = np.array([[x[idx], w[idx], y[i]]]) # Todo: Check order x, w
+                graph_in = np.array([[x[idx], w[idx], y[i]]])  # Todo: Check order x, w
                 graph_out = learning_rule(graph_in)
-                w[idx] += learning_rate*graph_out
-
-
+                w[idx] += learning_rate * graph_out
 
     return weights, y
 

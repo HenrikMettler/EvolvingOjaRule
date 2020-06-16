@@ -25,47 +25,66 @@ def calc_weight_penalty(weights, mode):
     return out
 
 
-def objective(individual, seed=1):
+def objective(
+    individual, mode, weight_mode, num_dimensions=2, num_points=1000, alpha=0.5, seed=1
+):
     """Objective function maximizing output variance, while punishing wei.
 
     Parameters
     ----------
     individual : Individual
         Individual of the Cartesian Genetic Programming Framework.
+    mode (string): Defines the first term of the fitness function
+        options: 'variance', 'angle'
+    weight_mode (scalar):  : Defines the way of calculating the weight penalty term
+        options:
+            '1': calculates the diff to a squared norm of 1
+            '0': calculates the squared sum of the
     num_dimensions (scalar): input data dimensionality
     num_points (scalar): number of input data points
     alpha (scalar): hyperparameter, weighting between weight norm deviation / var(y)
-    mode (scalar): Defines the way of calculating the weight penalty term
-        Options:
-            '1': calculates the diff to a squared norm of 1
-            '0': calculates the squared sum of the
     Returns
     -------
     Individual
         Modified individual with updated fitness value.
     """
-    # Todo: externalise with functool.partial application
-    alpha = 0.5
-    mode = 1
-    num_dimensions = 2
-    num_points = 1000
 
     if individual.fitness is not None:
         return individual
 
-    learning_rule = individual.to_numpy()
+    current_learning_rule = individual.to_numpy()
     input_data = create_input_data(num_points, num_dimensions)
-    [weights, generation_output] = learn_weights(input_data, learning_rule=learning_rule)
+    [weights, generation_output] = learn_weights(
+        input_data, learning_rule=current_learning_rule
+    )
 
-    output_variance = np.var(generation_output)
-    weight_penalty = calc_weight_penalty(weights[-1,:], mode)
-    fitness = (1 - alpha) * output_variance - alpha * weight_penalty
-    individual.fitness = fitness
+    weight_penalty = calc_weight_penalty(weights[-1, :], weight_mode)
+    if mode == "variance":
+        first_term = np.var(generation_output)
+    elif mode == "angle":
+        # calc PC1 of dataset
+        data_first_pc = compute_first_pc(input_data)
+        # calc angle PC1 to w
+        angles = compute_angle_weights_first_pc(weights, data_first_pc)
+        angle = angles[-1]
+        # calc diff to Pi
+        first_term = np.minimum(angle, np.pi - angle)
+        # * - 1
+
+    fitness = -(1 - alpha) * first_term - alpha * weight_penalty
+    if (
+        np.isnan(fitness) or weight_penalty > 1000
+    ):  # don't allow too large weights Todo: (keep in mind)
+        individual.fitness = -np.inf
+    else:
+        individual.fitness = fitness
 
     return individual
 
 
-def evolution(target_function, population_params, genome_params, ea_params, evolve_params):
+def evolution(
+    target_function, population_params, genome_params, ea_params, evolve_params
+):
     """Execute CGP for given target function.
 
     Parameters
@@ -100,7 +119,12 @@ def evolution(target_function, population_params, genome_params, ea_params, evol
     # the objective passed to evolve should only accept one argument,
     # the individual
     obj = functools.partial(
-        objective, seed=population_params["seed"]
+        objective,
+        mode="angle",
+        weight_mode=1,
+        num_dimensions=2,
+        num_points=1000,
+        seed=population_params["seed"],
     )
 
     # Perform the evolution
@@ -112,7 +136,7 @@ def evolution(target_function, population_params, genome_params, ea_params, evol
 
 if __name__ == "__main__":
 
-    population_params = {"n_parents": 10, "mutation_rate": 0.5, "seed": 11}
+    population_params = {"n_parents": 10, "mutation_rate": 0.5, "seed": 2}
 
     genome_params = {
         "n_inputs": 3,
@@ -120,11 +144,25 @@ if __name__ == "__main__":
         "n_columns": 10,
         "n_rows": 2,
         "levels_back": 5,
-        "primitives": (cgp.Add, cgp.Sub, cgp.Mul, cgp.Div, cgp.ConstantFloat),
+        "primitives": (cgp.Add, cgp.Sub, cgp.Mul, cgp.ConstantFloat),  # cgp.Div,
     }
 
-    ea_params = {"n_offsprings": 10, "n_breeding": 10, "tournament_size": 2, "n_processes": 2}
+    ea_params = {
+        "n_offsprings": 10,
+        "n_breeding": 10,
+        "tournament_size": 2,
+        "n_processes": 2,
+    }
 
-    evolve_params = {"max_generations": 1000, "min_fitness": 0.0}
+    evolve_params = {"max_generations": 1000, "min_fitness": 1000.0}
 
-    [history, champion] = evolution(f_target, population_params, genome_params, ea_params, evolve_params)
+    [history, champion] = evolution(
+        f_target, population_params, genome_params, ea_params, evolve_params
+    )
+
+    a = 1
+    champion_genome = champion.genome
+    temp_graph = cgp.CartesianGraph(champion_genome)
+    champion_active_gene = temp_graph.determine_active_regions()
+    champion_pretty_str = temp_graph.pretty_str()
+    champion_function = champion.to_func()
