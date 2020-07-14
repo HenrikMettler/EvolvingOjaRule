@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import matplotlib
-import sklearn.datasets as datasets
+import sklearn.datasets as sklearn_datasets
 
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
@@ -17,13 +17,14 @@ def initialize_weights(initial_weights, n):
     return initial_weights / np.sqrt(np.sum(initial_weights ** 2))
 
 
-def create_input_data(num_points, num_dimensions=2):
+def create_input_data(num_points, num_dimensions, max_var_input, seed):
     """create an input data set for the learning rules
 
     Args:
         num_points: number of data points (m)
         num_dimensions (default: 2): data point dimension (n)
-
+        max_var_input: gives the maximum input variance in input
+        seed:
     Returns:
         input_data: m by n
          - m: Number of data points
@@ -34,10 +35,10 @@ def create_input_data(num_points, num_dimensions=2):
             "The ration of num_points to num_dimensions is low, should be at least 10"
         )
 
-    cov_mat = datasets.make_spd_matrix(num_dimensions)
-    input_data = np.random.multivariate_normal(
-        np.zeros(num_dimensions), cov_mat, num_points
-    )
+    cov_mat = sklearn_datasets.make_spd_matrix(num_dimensions, seed)
+    # rescale the cov_mat to have max_var_input as maximal element
+    cov_mat = max_var_input * cov_mat/np.max(cov_mat)
+    input_data = np.random.multivariate_normal(np.zeros(num_dimensions), cov_mat, num_points)
 
     return input_data
 
@@ -69,10 +70,8 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     for i, x in enumerate(input_data):
         weights[i] = w
         y[i] = np.dot(w, x)  # output: postsynaptic firing rate of a linear neuron
-        try:
-            w = learning_rule(
-                w, x, y[i], learning_rate
-            )  # this works for the standard learning rules (Oja, (norm) Hebb)
+        try: # this works for the standard learning rules (Oja, (norm) Hebb)
+            w = learning_rule(w, x, y[i], learning_rate)
         except TypeError:
             # calculate the weight update for every weight separately from the cartesian graph
             for idx in range(n):
@@ -138,33 +137,6 @@ def hebbian_rule(w, x, y, learning_rate=0.005):
     return w_new
 
 
-"""def input_prompt_rule(w, x, y, learning_rate=0.005):
-    Custom learning rule defined by the User (via imput prompt)
-
-         Args:
-            w (numpy_array): A 1 by n array of weights
-            x (numpy array): A 1 by n array of presynaptic inputs .
-                -n: Number of presynaptic inputs
-            y (scalar): postsynaptic output
-            learning_rate (float, optional): learning rate, default 0.005
-
-        Returns:
-            w_new (numpy array): 1 by n, updated weight vector
-
-    temp_delta_w = input('Define your equation for delta_w')
-
-    # Todo: assertions that temp_delta is valid (Criteria: dimensionality,...)
-    is_valid = False
-    if np.size(temp_delta_w) == np.size(w):
-        is_valid = True
-    assert is_valid
-    delta_w = temp_delta_w
-    w_new = w + delta_w
-
-    return w_new
-"""
-
-
 def compute_first_pc(input_data):
     pca = PCA(n_components=1)
     pca.fit(input_data)
@@ -185,6 +157,18 @@ def compute_angle_weights_first_pc(weights, pc1):
         temp_dot_prod = np.dot(pc1, current_weight)
         angles[idx] = np.arccos(temp_dot_prod)
     return angles
+
+
+def calc_difference_to_first_pc(input_data, weight):
+    # calc PC1 of dataset
+    data_first_pc = compute_first_pc(input_data)
+    # calc angle PC1 to w
+    angle = compute_angle_weights_first_pc(weight, data_first_pc)
+    # calc diff to Pi
+    first_term = np.minimum(angle, np.pi - angle)
+    # * - 1
+    first_term = -first_term
+    return first_term
 
 
 def compute_accumulated_variance(y):
@@ -299,5 +283,5 @@ def run(
 if __name__ == "__main__":
     np.random.seed(11)
 
-    learning_rule = normalized_hebbian_rule
+    learning_rule = oja_rule
     run(num_points=10000, learning_rule=learning_rule, num_dimensions=10)

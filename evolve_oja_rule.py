@@ -7,7 +7,6 @@ from learning_rules import *
 
 
 def f_target(x, w, y):
-
     oja = y * (x - y * w)
     return oja
 
@@ -24,10 +23,8 @@ def calc_weight_penalty(weights, mode):
     return out
 
 
-def objective(
-    individual, mode, weight_mode, num_dimensions=2, num_points=1000, seed=1
-):
-    """Objective function maximizing output variance, while punishing wei.
+def objective(individual, mode, weight_mode, num_dimensions, num_points, seed):
+    """Objective function maximizing output variance, while punishing weights.
 
     Parameters
     ----------
@@ -41,53 +38,43 @@ def objective(
             '0': calculates the squared sum of the
     num_dimensions (scalar): input data dimensionality
     num_points (scalar): number of input data points
-    alpha (scalar): hyperparameter, weighting between weight norm deviation / var(y)
+    rng: np.random.RandomState
     Returns
     -------
     Individual
         Modified individual with updated fitness value.
     """
 
-    alpha = num_dimensions
+    max_var_input = 1
+    alpha = num_dimensions * max_var_input
 
     if individual.fitness is not None:
         return individual
 
+    # Todo: This is presumably the wrong place create the data
+    input_data = create_input_data(num_points, num_dimensions, max_var_input, seed)
+
     current_learning_rule = individual.to_numpy()
-    input_data = create_input_data(num_points, num_dimensions)
-    [weights, generation_output] = learn_weights(
-        input_data, learning_rule=current_learning_rule
-    )
+
+    [weights, generation_output] = learn_weights(input_data, learning_rule=current_learning_rule)
 
     weight_penalty = calc_weight_penalty(weights[-1, :], weight_mode)
     if mode == "variance":
-        first_term = np.var(generation_output[900:,:]) # for validation use only the last 100 elements
+        first_term = np.var(generation_output[int(0.9*num_points):,:]) # for validation use only the last 100 elements
     elif mode == "angle":
-        # calc PC1 of dataset
-        data_first_pc = compute_first_pc(input_data)
-        # calc angle PC1 to w
-        angles = compute_angle_weights_first_pc(weights, data_first_pc)
-        angle = angles[-1]
-        # calc diff to Pi
-        first_term = np.minimum(angle, np.pi - angle)
-        # * - 1
+        first_term = calc_difference_to_first_pc(input_data, weights[-1,:])
 
     fitness = first_term - alpha * weight_penalty
-    if (
-        np.isnan(fitness) or weight_penalty > 1000
-    ):  # don't allow too large weights Todo: (keep in mind)
+    if (np.isnan(fitness) or weight_penalty > 1000):
         individual.fitness = -np.inf
     else:
         individual.fitness = fitness
 
     individual.weights = weights[-1,:]
-
     return individual
 
 
-def evolution(
-    target_function, population_params, genome_params, ea_params, evolve_params
-):
+def evolution(population_params, genome_params, ea_params, evolve_params, seed):
     """Execute CGP for given target function.
 
     Parameters
@@ -97,6 +84,7 @@ def evolution(
     genome_params: dict with  n_inputs, n_outputs, n_columns, n_rows, levels_back, primitives (allowed function gene values)
     ea_params: dict with n_offsprings, n_breeding, tournament_size, n_processes,
     evolve_params: dict with max_generations, min_fitness
+    seed:
 
     Returns
     -------
@@ -106,31 +94,24 @@ def evolution(
         Individual with the highest fitness in the last generation
     """
 
-    # create population that will be evolved
     pop = cgp.Population(**population_params, genome_params=genome_params)
-
-    # create instance of evolutionary algorithm
     ea = cgp.ea.MuPlusLambda(**ea_params)
 
-    # define callback for recording of fitness over generations
     history = {}
     history["fitness_parents"] = []
 
     def recording_callback(pop):
         history["fitness_parents"].append(pop.fitness_parents())
 
-    # the objective passed to evolve should only accept one argument,
-    # the individual
     obj = functools.partial(
         objective,
         mode="variance",
         weight_mode=1,
         num_dimensions=2,
         num_points=1000,
-        seed=population_params["seed"],
+        seed=seed,
     )
 
-    # Perform the evolution
     cgp.evolve(
         pop, obj, ea, **evolve_params, print_progress=True, callback=recording_callback,
     )
@@ -139,7 +120,10 @@ def evolution(
 
 if __name__ == "__main__":
 
-    population_params = {"n_parents": 10, "mutation_rate": 0.5, "seed": 1}
+    seed = 1234
+    np.random.seed(seed)
+
+    population_params = {"n_parents": 10, "mutation_rate": 0.1, "seed": seed}
 
     genome_params = {
         "n_inputs": 3,
@@ -147,7 +131,7 @@ if __name__ == "__main__":
         "n_columns": 10,
         "n_rows": 2,
         "levels_back": 5,
-        "primitives": (cgp.Add, cgp.Sub, cgp.Mul),  # cgp.Div,
+        "primitives": (cgp.Add, cgp.Sub) #, cgp.Mul),  # cgp.Div,
     }
 
     ea_params = {
@@ -159,9 +143,7 @@ if __name__ == "__main__":
 
     evolve_params = {"max_generations": 1000, "min_fitness": 1000.0}
 
-    [history, champion] = evolution(
-        f_target, population_params, genome_params, ea_params, evolve_params
-    )
+    [history, champion] = evolution(population_params, genome_params, ea_params, evolve_params, seed)
 
     champion_genome = champion.genome
     temp_graph = cgp.CartesianGraph(champion_genome)
