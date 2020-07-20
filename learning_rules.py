@@ -37,8 +37,10 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed):
 
     cov_mat = sklearn_datasets.make_spd_matrix(num_dimensions, seed)
     # rescale the cov_mat to have max_var_input as maximal element
-    cov_mat = max_var_input * cov_mat/np.max(cov_mat)
-    input_data = np.random.multivariate_normal(np.zeros(num_dimensions), cov_mat, num_points)
+    cov_mat = max_var_input * cov_mat / np.max(cov_mat)
+    input_data = np.random.multivariate_normal(
+        np.zeros(num_dimensions), cov_mat, num_points
+    )
 
     return input_data
 
@@ -70,7 +72,7 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     for i, x in enumerate(input_data):
         weights[i] = w
         y[i] = np.dot(w, x)  # output: postsynaptic firing rate of a linear neuron
-        try: # this works for the standard learning rules (Oja, (norm) Hebb)
+        try:  # this works for the standard learning rules (Oja, (norm) Hebb)
             w = learning_rule(w, x, y[i], learning_rate)
         except TypeError:
             # calculate the weight update for every weight separately from the cartesian graph

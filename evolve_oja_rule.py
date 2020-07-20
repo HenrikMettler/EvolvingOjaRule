@@ -23,7 +23,49 @@ def calc_weight_penalty(weights, mode):
     return out
 
 
-def objective(individual, mode, weight_mode, num_dimensions, num_points, seed):
+def calculate_fitness(current_learning_rule, datasets, mode, weight_mode, train_fraction):
+
+    first_term = 0
+    weight_penalty = 0
+    weights_final_per_dataset = []
+
+    for dataset in datasets:
+
+        data_train = dataset[0:int(train_fraction * num_points), :]
+        data_validate = dataset[int(train_fraction * num_points):, :]
+
+        [weights, _] = learn_weights(
+            data_train, learning_rule=current_learning_rule
+        )  # Todo: rename function and use with initial_weight = weights, lr = 0 for evalutation
+        weights_final = weights[-1, :]
+        weights_final_per_dataset.append(weights_final)
+
+        weight_penalty += calc_weight_penalty(weights_final, weight_mode)
+
+        [_, output] = learn_weights(
+            data_validate,
+            learning_rule=learning_rule,
+            initial_weights=weights[-1, :],
+            learning_rate=0,
+        )
+
+        if mode == "variance":
+            first_term += np.var(
+                output
+        )  # for validation use only the last 100 elements
+        elif mode == "angle":
+            Warning(
+                "Fitness function hyperparam alpha is currently adapted to using variance - use this mode carefully"
+            )
+            first_term += calc_difference_to_first_pc(
+                data_train, weights[-1, :]
+            )  # Todo: use data_train or dataset?
+
+    fitness = first_term - alpha * weight_penalty
+    return fitness, weights_final_per_dataset
+
+
+def objective(individual, datasets, alpha, mode, weight_mode):
     """Objective function maximizing output variance, while punishing weights.
 
     Parameters
@@ -45,46 +87,32 @@ def objective(individual, mode, weight_mode, num_dimensions, num_points, seed):
         Modified individual with updated fitness value.
     """
 
-    max_var_input = 1
-    alpha = num_dimensions * max_var_input
-
     if individual.fitness is not None:
         return individual
 
-    # Todo: This is presumably the wrong place create the data
-    input_data = create_input_data(num_points, num_dimensions, max_var_input, seed)
-
     current_learning_rule = individual.to_numpy()
+    train_fraction = 0.9
 
-    [weights, generation_output] = learn_weights(input_data, learning_rule=current_learning_rule)
+    fitness, weights_final_per_dataset = calculate_fitness(current_learning_rule, datasets, mode, weight_mode, train_fraction)
 
-    weight_penalty = calc_weight_penalty(weights[-1, :], weight_mode)
-    if mode == "variance":
-        first_term = np.var(generation_output[int(0.9*num_points):,:]) # for validation use only the last 100 elements
-    elif mode == "angle":
-        first_term = calc_difference_to_first_pc(input_data, weights[-1,:])
-
-    fitness = first_term - alpha * weight_penalty
-    if (np.isnan(fitness) or weight_penalty > 1000):
-        individual.fitness = -np.inf
-    else:
-        individual.fitness = fitness
-
-    individual.weights = weights[-1,:]
+    individual.fitness = fitness
+    individual.weights = weights_final_per_dataset
     return individual
 
 
-def evolution(population_params, genome_params, ea_params, evolve_params, seed):
+def evolution(
+    datasets, population_params, genome_params, ea_params, evolve_params, alpha
+):
     """Execute CGP for given target function.
 
     Parameters
     ----------
-    target_function : Callable Target function
+    datasets : List of dataset(s)
     population_params: dict with n_parents, mutation_rate, seed
     genome_params: dict with  n_inputs, n_outputs, n_columns, n_rows, levels_back, primitives (allowed function gene values)
     ea_params: dict with n_offsprings, n_breeding, tournament_size, n_processes,
     evolve_params: dict with max_generations, min_fitness
-    seed:
+    alpha: Hyperparameter weighting the second term of the fitness function
 
     Returns
     -------
@@ -99,17 +127,14 @@ def evolution(population_params, genome_params, ea_params, evolve_params, seed):
 
     history = {}
     history["fitness_parents"] = []
+    # history["weights_champion"] = []
 
     def recording_callback(pop):
         history["fitness_parents"].append(pop.fitness_parents())
+        # history["weights_champion"].append(pop.champion.weights) # Todo: why does this not work?
 
     obj = functools.partial(
-        objective,
-        mode="variance",
-        weight_mode=1,
-        num_dimensions=2,
-        num_points=1000,
-        seed=seed,
+        objective, datasets=datasets, alpha=alpha, mode="variance", weight_mode=1,
     )
 
     cgp.evolve(
@@ -123,6 +148,15 @@ if __name__ == "__main__":
     seed = 1234
     np.random.seed(seed)
 
+    # data parameters
+    n_datasets = 3
+    num_dimensions = 2
+    num_points = 1000
+    max_var_input = 1
+
+    # hyperparameter for weighting fitness function terms
+    alpha = num_dimensions * max_var_input
+
     population_params = {"n_parents": 10, "mutation_rate": 0.1, "seed": seed}
 
     genome_params = {
@@ -131,7 +165,7 @@ if __name__ == "__main__":
         "n_columns": 10,
         "n_rows": 2,
         "levels_back": 5,
-        "primitives": (cgp.Add, cgp.Sub) #, cgp.Mul),  # cgp.Div,
+        "primitives": (cgp.Add, cgp.Sub, cgp.Mul),  # cgp.Div,
     }
 
     ea_params = {
@@ -141,12 +175,25 @@ if __name__ == "__main__":
         "n_processes": 2,
     }
 
-    evolve_params = {"max_generations": 1000, "min_fitness": 1000.0}
+    evolve_params = {
+        "max_generations": 1000,
+        "min_fitness": 1000.0,
+    }  # Todo: What does min fitness mean?
 
-    [history, champion] = evolution(population_params, genome_params, ea_params, evolve_params, seed)
+    # initialize datasets
+    datasets = []
+    for idx in range(n_datasets):
+        dataset = create_input_data(
+            num_points, num_dimensions, max_var_input, seed + idx
+        )
+        datasets.append(dataset)
 
-    champion_genome = champion.genome
-    temp_graph = cgp.CartesianGraph(champion_genome)
-    champion_active_gene = temp_graph.determine_active_regions()
-    champion_pretty_str = temp_graph.pretty_str()
-    champion_function = champion.to_func()
+    [history, champion] = evolution(
+        datasets, population_params, genome_params, ea_params, evolve_params, alpha
+    )
+
+    champion_graph = cgp.CartesianGraph(champion.genome)
+    champion_active_gene = champion_graph.determine_active_regions()
+
+    # evaluate hypothetical fitness of oja rule
+    oja_fitness, _ = calculate_fitness(oja_rule, datasets, mode="variance", weight_mode=1, train_fraction= 0.9)
