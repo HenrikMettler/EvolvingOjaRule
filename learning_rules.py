@@ -76,12 +76,21 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
             w = learning_rule(w, x, y[i], learning_rate)
         except TypeError:
             # calculate the weight update for every weight separately from the cartesian graph
+            # todo: can be done in vectors with .to_numpy function!
             for idx in range(n):
-                graph_in = np.array([[x[idx], w[idx], y[i]]])  # Todo: Check order x, w
-                graph_out = learning_rule(graph_in)
-                w[idx] += learning_rate * graph_out
+                graph_in = np.array([[x[idx], w[idx], y[i]]])  #
+                graph_out = learning_rule(graph_in)  # todo: catch nan -> return weights as nan
+                w[idx] += learning_rate * graph_out  # Todo: this readout is often subject to overflow
 
     return weights, y
+
+
+def evaluate_output(evaluation_data, weights):
+    m = np.size(evaluation_data, 0)
+    y = np.zeros([m, 1])  # initialize y
+    for i in range(m):
+        y[i] = np.dot(weights, evaluation_data[i])  # output: postsynaptic firing rate of a linear neuron
+    return y
 
 
 def oja_rule(w, x, y, learning_rate=0.005):

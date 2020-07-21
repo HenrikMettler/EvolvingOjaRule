@@ -23,7 +23,7 @@ def calc_weight_penalty(weights, mode):
     return out
 
 
-def calculate_fitness(current_learning_rule, datasets, mode, weight_mode, train_fraction):
+def calculate_fitness(current_learning_rule, datasets, alpha, mode, weight_mode, train_fraction):
 
     first_term = 0
     weight_penalty = 0
@@ -34,20 +34,13 @@ def calculate_fitness(current_learning_rule, datasets, mode, weight_mode, train_
         data_train = dataset[0:int(train_fraction * num_points), :]
         data_validate = dataset[int(train_fraction * num_points):, :]
 
-        [weights, _] = learn_weights(
-            data_train, learning_rule=current_learning_rule
-        )  # Todo: rename function and use with initial_weight = weights, lr = 0 for evalutation
+        [weights, _] = learn_weights(data_train, learning_rule=current_learning_rule) # todo: if weights are returned as nan set fitness to -inf
         weights_final = weights[-1, :]
         weights_final_per_dataset.append(weights_final)
 
         weight_penalty += calc_weight_penalty(weights_final, weight_mode)
 
-        [_, output] = learn_weights(
-            data_validate,
-            learning_rule=learning_rule,
-            initial_weights=weights[-1, :],
-            learning_rate=0,
-        )
+        output = evaluate_output(data_validate, weights_final)
 
         if mode == "variance":
             first_term += np.var(
@@ -93,7 +86,7 @@ def objective(individual, datasets, alpha, mode, weight_mode):
     current_learning_rule = individual.to_numpy()
     train_fraction = 0.9
 
-    fitness, weights_final_per_dataset = calculate_fitness(current_learning_rule, datasets, mode, weight_mode, train_fraction)
+    fitness, weights_final_per_dataset = calculate_fitness(current_learning_rule, datasets, alpha, mode, weight_mode, train_fraction)
 
     individual.fitness = fitness
     individual.weights = weights_final_per_dataset
@@ -127,11 +120,15 @@ def evolution(
 
     history = {}
     history["fitness_parents"] = []
-    # history["weights_champion"] = []
+    history["champion_dna"] = []
+    history["weights_champion"] = []
 
     def recording_callback(pop):
         history["fitness_parents"].append(pop.fitness_parents())
-        # history["weights_champion"].append(pop.champion.weights) # Todo: why does this not work?
+        history["champion_dna"].append(pop.champion.genome.dna) # Todo: check
+        #history["weights_champion"].append(pop.champion.weights)  # Todo: why does this not work?
+        #Todo -> The issue is with the offspring created in
+        # https://github.com/Happy-Algorithms-League/hal-cgp/blob/5421d9cdf0812ab3098d54c201ee115fa3129bce/cgp/ea/mu_plus_lambda.py#L103
 
     obj = functools.partial(
         objective, datasets=datasets, alpha=alpha, mode="variance", weight_mode=1,
@@ -170,13 +167,12 @@ if __name__ == "__main__":
 
     ea_params = {
         "n_offsprings": 10,
-        "n_breeding": 10,
         "tournament_size": 2,
         "n_processes": 2,
     }
 
     evolve_params = {
-        "max_generations": 1000,
+        "max_generations": 2,  # todo change back (1000)
         "min_fitness": 1000.0,
     }  # Todo: What does min fitness mean?
 
@@ -188,12 +184,15 @@ if __name__ == "__main__":
         )
         datasets.append(dataset)
 
+    # evaluate hypothetical fitness of oja rule
+    oja_fitness, _ = calculate_fitness(oja_rule, datasets, alpha, mode="variance", weight_mode=1, train_fraction=0.9)
+
     [history, champion] = evolution(
         datasets, population_params, genome_params, ea_params, evolve_params, alpha
     )
+    # Todo: create Genome from champion-dna to evaluate final weight vector
 
     champion_graph = cgp.CartesianGraph(champion.genome)
     champion_active_gene = champion_graph.determine_active_regions()
 
-    # evaluate hypothetical fitness of oja rule
-    oja_fitness, _ = calculate_fitness(oja_rule, datasets, mode="variance", weight_mode=1, train_fraction= 0.9)
+
