@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import matplotlib
 import sklearn.datasets as sklearn_datasets
+import warnings
 
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
@@ -77,10 +78,32 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
         except TypeError:
             # calculate the weight update for every weight separately from the cartesian graph
             # todo: can be done in vectors with .to_numpy function!
-            for idx in range(n):
-                graph_in = np.array([[x[idx], w[idx], y[i]]])  #
-                graph_out = learning_rule(graph_in)  # todo: catch nan -> return weights as nan
-                w[idx] += learning_rate * graph_out  # Todo: this readout is often subject to overflow
+            with warnings.catch_warnings():  # Todo: why they arise & if all caught
+                warnings.filterwarnings(
+                    "ignore",
+                    message="invalid value encountered in reduce "
+                    "arrmean = umr_sum(arr, axis, dtype, keepdims=True)",
+                )
+                warnings.filterwarnings(
+                    "ignore", message="overflow encountered in double_scalars"
+                )
+                warnings.filterwarnings(
+                    "ignore", message="invalid value encountered in double_scalars"
+                )
+                warnings.filterwarnings(
+                    "ignore", message="invalid value encountered in subtract"
+                )
+
+                for idx in range(n):
+                    graph_in = np.array([[x[idx], w[idx], y[i]]])  #
+                    graph_out = learning_rule(graph_in)
+                    # Catch if the graph returns nan, set final weights all to nan and return
+                    if np.isnan(graph_out[0][0]):
+                        weights[-1] = graph_out[0][0]
+                        return weights, y
+                    w[idx] += (
+                        learning_rate * graph_out
+                    )  # Todo: this readout is often subject to overflow
 
     return weights, y
 
@@ -89,7 +112,9 @@ def evaluate_output(evaluation_data, weights):
     m = np.size(evaluation_data, 0)
     y = np.zeros([m, 1])  # initialize y
     for i in range(m):
-        y[i] = np.dot(weights, evaluation_data[i])  # output: postsynaptic firing rate of a linear neuron
+        y[i] = np.dot(
+            weights, evaluation_data[i]
+        )  # output: postsynaptic firing rate of a linear neuron
     return y
 
 
@@ -161,20 +186,34 @@ def compute_difference_weights_first_pc(weights, pc1):
     return diff_w_pc1
 
 
-def compute_angle_weights_first_pc(weights, pc1):
+def compute_angle_weight_first_pc(weight, pc0, mode="rad"):
+    weight_rescale = weight / np.linalg.norm(weight)
+    dot_prod = np.dot(pc0, weight_rescale)
+    angle = np.arccos(dot_prod)
+    if mode == "rad":
+        return angle
+    elif mode == "degree":
+        return angle * 360 / np.pi
+
+
+def compute_angles_weights_first_pc(weights, pc0):
     angles = np.zeros(len(weights))
     for idx in range(np.size(weights, 0)):
-        current_weight = weights[idx] / np.linalg.norm(weights[idx])
-        temp_dot_prod = np.dot(pc1, current_weight)
-        angles[idx] = np.arccos(temp_dot_prod)
+        angles[idx] = compute_angle_weight_first_pc(weights[idx], pc0)
     return angles
+
+
+def calculate_smallest_angle(angle: float) -> float:
+    min_360 = np.min(angle, 360 - angle)
+    smallest_angle = np.min(min_360, abs(angle - 180))
+    return smallest_angle
 
 
 def calc_difference_to_first_pc(input_data, weight):
     # calc PC1 of dataset
     data_first_pc = compute_first_pc(input_data)
     # calc angle PC1 to w
-    angle = compute_angle_weights_first_pc(weight, data_first_pc)
+    angle = compute_angles_weights_first_pc(weight, data_first_pc)
     # calc diff to Pi
     first_term = np.minimum(angle, np.pi - angle)
     # * - 1
@@ -203,7 +242,7 @@ def plot_data(input_data, weights, y, do_data_plot=False):
 
     true_pc1 = compute_first_pc(input_data)
     diff_w_pc1 = compute_difference_weights_first_pc(weights, true_pc1)
-    angles_w_pc1 = compute_angle_weights_first_pc(weights, true_pc1)
+    angles_w_pc1 = compute_angles_weights_first_pc(weights, true_pc1)
     acc_var_y = compute_accumulated_variance(y)
 
     # plot the mean squared difference
