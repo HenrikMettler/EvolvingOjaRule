@@ -2,25 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import functools
 import cgp
+import pickle
+import sympy
 
 from learning_rules import *
+from functions import *
 
 
 def f_target(x, w, y):
     oja = y * (x - y * w)
     return oja
-
-
-def calc_weight_penalty(weights, mode):
-    if mode == 1:
-        out = np.square(np.sqrt(np.sum(np.square(weights))) - 1)
-    elif mode == 0:
-        out = np.sqrt(np.sum(np.square(weights)))
-    else:
-        raise NotImplementedError(
-            "Mode for calculating the weight penalty not available, choose 0 or 1"
-        )
-    return out
 
 
 def calculate_fitness(
@@ -55,8 +46,8 @@ def calculate_fitness(
             Warning(
                 "Fitness function hyperparam alpha is currently adapted to using variance - use this mode carefully"
             )
-            first_term += calc_difference_to_first_pc(
-                data_train, weights[-1, :]
+            first_term -= calc_difference_to_first_pc(
+                dataset, weights[-1, :]
             )  # Todo: use data_train or dataset?
 
     fitness = first_term - alpha * weight_penalty
@@ -148,12 +139,13 @@ def evolution(
 
 if __name__ == "__main__":
 
-    seed = 1000  # before 1234
+    seed = 2000  # before 1234
     np.random.seed(seed)
     flag_save_figures = True
+    flag_save_data = True
 
     # data parameters
-    n_datasets = 5
+    n_datasets = 10
     num_dimensions = 2
     num_points = 1000
     max_var_input = 1
@@ -179,19 +171,16 @@ if __name__ == "__main__":
     }
 
     evolve_params = {
-        "max_generations": 500,
+        "max_generations": 500,  # Todo: should be 1000
         "min_fitness": 1000.0,
     }  #
 
     # initialize datasets
     datasets = []
-    pc0_per_dataset = []
     for idx in range(n_datasets):
         dataset = create_input_data(
             num_points, num_dimensions, max_var_input, seed + idx
         )
-        pc0 = compute_first_pc(dataset)
-        pc0_per_dataset.append(pc0)
         datasets.append(dataset)
 
     [history, champion] = evolution(
@@ -207,11 +196,18 @@ if __name__ == "__main__":
         weight_mode=1,
         train_fraction=0.9,
     )
+    champion_sympy_expression = champion.to_sympy()
 
     # evaluate hypothetical fitness of oja rule
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
         oja_rule, datasets, alpha, mode="variance", weight_mode=1, train_fraction=0.9
     )
+
+    # Todo: move calculation of PC's into dataset creation?
+    pc0_per_dataset = []
+    for dataset in datasets:
+        pc0 = compute_first_pc(dataset)
+        pc0_per_dataset.append(pc0)
 
     # plot (works only for n_dimensions = 2 at the moment)
     m = np.linspace(-1, 1, 1000)
@@ -259,5 +255,14 @@ if __name__ == "__main__":
         )
 
         if flag_save_figures:
-            # Todo: implement automatic saving
-            a = 1
+            fig.savefig("figures/weight_vectors_seed" + str(seed+idx) + ".png")
+
+        if flag_save_data:
+            param_list = [ea_params, evolve_params, genome_params, population_params, seed, n_datasets, num_dimensions,
+                            num_points, max_var_input]
+
+            save_data_list = [param_list, champion, history, champion_sympy_expression]  # sympy expression purely for convenience
+            data_file = open('data/data_seed' + str(seed+idx) + '.pickle', 'wb')
+            pickle.dump(save_data_list, data_file)
+
+

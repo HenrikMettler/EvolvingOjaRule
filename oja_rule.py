@@ -58,7 +58,7 @@ def learn_normalized_hebbian(input_data, initial_weights=None, learning_rate=0.0
     """Normalized Hebbian rule (Oja, 1982; eq 2)"""
 
     def plasticity_rule(w, y, x):
-        pass  # TODO implement
+        pass  #
 
     return sim(input_data, initial_weights, learning_rate, plasticity_rule)
 
