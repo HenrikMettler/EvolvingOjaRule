@@ -5,10 +5,10 @@ import warnings
 from sklearn.decomposition import PCA
 
 
-def initialize_weights(initial_weights, n):
+def initialize_weights(initial_weights, n, rng):
 
     if initial_weights is None:
-        initial_weights = np.random.uniform(-1, 1, size=n)
+        initial_weights = rng.uniform(-1, 1, size=n)
 
     # rescale the initial weights to squared sum 1
     return initial_weights / np.sqrt(np.sum(initial_weights ** 2))
@@ -32,6 +32,8 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed):
             "The ration of num_points to num_dimensions is low, should be at least 10"
         )
 
+    # Todo: calculate here eigendecomposition for cov_mat to calculate
+
     cov_mat = sklearn_datasets.make_spd_matrix(num_dimensions, seed)
     # rescale the cov_mat to have max_var_input as maximal element
     cov_mat = max_var_input * cov_mat / np.max(cov_mat)
@@ -42,7 +44,7 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed):
     return input_data
 
 
-def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate=0.005):
+def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate=0.005, rng=np.random.default_rng()):
     """ learn weights
      Args:
         input_data (numpy array): An m by n array of datapoints.
@@ -63,7 +65,7 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     m = np.size(input_data, 0)
     n = np.size(input_data, 1)
 
-    w = initialize_weights(initial_weights, n)
+    w = initialize_weights(initial_weights, n, rng)
     y = np.zeros([m, 1])  # initialize y
     weights = np.zeros([m, n])
     for i, x in enumerate(input_data):
@@ -109,7 +111,7 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
                         return weights, y
                     w[idx] += (
                         learning_rate * graph_out
-                    )  # Todo: this readout is often subject to overflow
+                    )
 
     return weights, y
 
@@ -137,7 +139,9 @@ def calc_weight_penalty(weights, mode):
 
 
 def compute_first_pc(input_data):
-    pca = PCA(n_components=1)
+    if np.any(np.isnan(input_data)) or np.any(np.isinf(input_data)):
+        print("oops")
+    pca = PCA(n_components=1, svd_solver='full')
     pca.fit(input_data)
     return pca.components_[0]
 
@@ -150,7 +154,7 @@ def compute_difference_weights_first_pc(weights, pc1):
 
 
 def compute_angle_weight_first_pc(weight, pc0, mode="rad"):
-    weight_rescale = weight / np.linalg.norm(weight)
+    weight_rescale = weight / np.linalg.norm(weight)  # Todo: deal with case when norm = 0
     dot_prod = np.dot(pc0, weight_rescale)
     angle = np.arccos(dot_prod)
     if mode == "rad":
@@ -176,7 +180,7 @@ def calc_difference_to_first_pc(input_data, weight):
     # calc PC1 of dataset
     data_first_pc = compute_first_pc(input_data)
     # calc angle PC1 to w
-    angle = compute_angles_weights_first_pc(weight, data_first_pc)
+    angle = compute_angle_weight_first_pc(weight, data_first_pc, mode="rad")
     # calc diff to Pi
     first_term = np.minimum(angle, np.pi - angle)
     return first_term

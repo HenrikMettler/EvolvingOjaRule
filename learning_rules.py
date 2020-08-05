@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from functions import *
 
 
-def oja_rule(w, x, y, learning_rate=0.005):
+def oja_rule(w: np.ndarray, x: np.ndarray, y, learning_rate=0.005) -> np.ndarray:
     """Oja linearized learning rule (Oja, 1982: eq.3)
 
     Args:
@@ -24,7 +24,7 @@ def oja_rule(w, x, y, learning_rate=0.005):
     return w_new
 
 
-def normalized_hebbian_rule(w, x, y, learning_rate=0.005):
+def normalized_hebbian_rule(w: np.ndarray, x: np.ndarray, y, learning_rate=0.005) -> np.ndarray:
     """ normalized Hebbian rule (Oja, 1982: eq.2)
 
      Args:
@@ -43,7 +43,7 @@ def normalized_hebbian_rule(w, x, y, learning_rate=0.005):
     return w_new
 
 
-def hebbian_rule(w, x, y, learning_rate=0.005):
+def hebbian_rule(w: np.ndarray, x: np.ndarray, y, learning_rate=0.005) -> np.ndarray:
     """ Hebbian rule (eg Hebb 1961, Bishop 1995)
 
      Args:
@@ -61,7 +61,7 @@ def hebbian_rule(w, x, y, learning_rate=0.005):
     return w_new
 
 
-def plot_data(input_data, weights, y, do_data_plot=False):
+def plot_data(input_data: np.ndarray, weights: np.ndarray, y: np.ndarray, do_data_plot=False) -> None:
     """
     Plots the amplitude of the angle between weights and PC1 of the input data,
     Plots a view of the data and the evolving axis, if do_dataPlot = true and m = 2
@@ -156,7 +156,7 @@ def run(
     num_dimensions=2,
     initial_weights=None,
     learning_rate=0.005,
-):
+) -> None:
 
     input_data = create_input_data(num_points, num_dimensions)
     [weights, y] = learn_weights(input_data, learning_rule=learning_rule)
