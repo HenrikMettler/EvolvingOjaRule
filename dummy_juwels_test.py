@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import functools
-#import cgp
+import cgp
 import pickle
 import sympy
 import sys
@@ -13,7 +13,7 @@ seed = seed + seed_offset
 # print the imported system variable
 print(seed_offset, seed)
 
-"""# create a cgp population and evolutionary algorithm (step 0)
+# create a cgp population and evolutionary algorithm (step 0)
 population_params = {"n_parents": 10, "mutation_rate": 0.1, "seed": seed}
 genome_params = {
     "n_inputs": 3,
@@ -35,6 +35,6 @@ evolve_params = {
 
 pop = cgp.Population(**population_params, genome_params=genome_params)
 ea = cgp.ea.MuPlusLambda(**ea_params)
-"""
+
 
 
