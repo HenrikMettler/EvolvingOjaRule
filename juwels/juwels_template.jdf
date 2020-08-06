@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#SBATCH --job-name {jobname}
+#SBATCH --workdir {outputdir}
+#SBATCH --output={outputdir}/{jobname}.e
+#SBATCH --error={outputdir}/{jobname}.e
+#SBATCH --time {wall_clock_limit}
+#SBATCH --ntasks {ntasks}
+#SBATCH --cpus-per-task {cpus-per-task}
+#SBATCH --nodes {n_nodes}
+#SBATCH --exclusive
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user={mail-user}
+#SBATCH --account={account}
+#SBATCH --partition={partition}
+
+date
+echo `hostname`
+cd {outputdir}
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 0 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 10 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 20 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 30 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 40 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 50 &
+wait
+date
