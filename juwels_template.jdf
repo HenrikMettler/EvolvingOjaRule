@@ -1,7 +1,6 @@
 #!/bin/bash
 
 #SBATCH --job-name {jobname}
-#SBATCH --workdir {outputdir}
 #SBATCH --output={outputdir}/{jobname}.e
 #SBATCH --error={outputdir}/{jobname}.e
 #SBATCH --time {wall_clock_limit}

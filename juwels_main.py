@@ -18,8 +18,8 @@ if __name__ == "__main__":
         params = json.load(f)
     params['seed'] += seed_offset
     seed = params['seed']
-    print(seed)
-    """rng = np.random.RandomState(params['seed'])
+
+    rng = np.random.RandomState(params['seed'])
 
     params['population_params']['seed'] = seed
 
@@ -131,4 +131,4 @@ if __name__ == "__main__":
 
         # sympy expression purely for convenience
         data_file = open('data/data_seed' + str(seed+idx) + '.pickle', 'wb')
-        pickle.dump(save_data, data_file)"""
+        pickle.dump(save_data, data_file)

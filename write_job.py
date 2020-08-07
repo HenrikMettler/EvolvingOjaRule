@@ -4,26 +4,22 @@ import numpy as np
 import os
 import sys
 
-sys.path.insert(0, os.path.expanduser('~/work/projects/python-gp'))  # Todo: here
+#sys.path.insert(0, os.path.expanduser('~/work/projects/python-gp'))  # Todo: check whether this can be removed
 import cgp
 
 sys.path.insert(0, '../../includes/')
-import juwels.write_job_utils as utils
+import write_job_utils as utils
 
 
 if __name__ == '__main__':
 
-    #sim_key = dicthash.generate_hash_from_dict(sim_params)
-
     params = {
-
-        #'sim_key': sim_key, # consistency check  # Todo check if sim_key can be removed
 
         # machine setup
         'submit_command': 'sbatch',
         'jobfile_template': 'juwels_template.jdf',
         'jobname': 'evolving-oja-rule',
-        'wall_clock_limit': '24:00:00',
+        'wall_clock_limit': '00:10:00',
         'ntasks': 6,
         'cpus-per-task': 8,
         'n_nodes': 1,
