@@ -27,7 +27,7 @@ if __name__ == '__main__':
         'account': 'hhd34',
         'partition': 'batch',
         'sim_script': 'juwels_main.py',
-        'dependencies': ['../learning_rules.py', '../functions.py'],
+        'dependencies': ['learning_rules.py', 'functions.py'],
 
         'seed':  1,
 
