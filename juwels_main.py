@@ -6,6 +6,7 @@ import pickle
 import sympy
 import json
 import sys
+import os
 
 from learning_rules import oja_rule
 from functions import *
@@ -92,5 +93,6 @@ if __name__ == "__main__":
                      }
 
     # sympy expression purely for convenience
-    data_file = open('data/data_seed' + str(seed) + '.pickle', 'wb')
+    filename = os.path.join(params['outputdir'], 'data.pickle')
+    data_file = open(filename, 'wb')
     pickle.dump(save_data, data_file)
