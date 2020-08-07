@@ -65,7 +65,7 @@ if __name__ == '__main__':
         },
 
         'evolve_params' : {
-        'max_generations': 10000,
+        'max_generations': 2,  # Todo: Set
         'min_fitness': 1000.0,
         },
 
