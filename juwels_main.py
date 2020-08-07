@@ -7,15 +7,20 @@ import sympy
 import json
 import sys
 
-from learning_rules import *
+from learning_rules import oja_rule
 from functions import *
+from evolution import evolution, objective, calculate_fitness
+
 
 if __name__ == "__main__":
 
-    seed_offset = int(sys.argv[1])
+    try:
+        seed_offset = int(sys.argv[1])  # For Juwels
+    except IndexError:
+        seed_offset = 1  # For offline debugging
 
-    with open('params.json', 'r') as f:
-        params = json.load(f)
+    with open('params.pickle', 'rb') as f:
+        params = pickle.load(f)
     params['seed'] += seed_offset
     seed = params['seed']
 
@@ -33,21 +38,23 @@ if __name__ == "__main__":
     # initialize datasets
     datasets = []
     pc0_per_dataset = []
+    pc0_empirical_per_dataset = []
 
-    for idx in range(data_params['n_datasets']):
+    for idx in range(n_datasets):
         dataset, cov_mat = create_input_data(
             num_points, num_dimensions, max_var_input, seed + idx
         )
         datasets.append(dataset)
 
-        pc0 = compute_first_pc(dataset)
+        pc0 = calculate_eigenvector_for_largest_eigenvalue(cov_mat)
         pc0_per_dataset.append(pc0)
+        pc0_empirical = compute_first_pc(dataset)
+        pc0_empirical_per_dataset.append(pc0_empirical)
 
     # initialize fitness parameters
-    alpha = num_dimensions * data_params['max_var_input']
+    alpha = num_dimensions * max_var_input
     fitness_mode = params['fitness_mode']
 
-    # Todo: check if there has to be some reset of the rng
     [history, champion] = evolution(
         datasets, pc0_per_dataset, params['population_params'],
         params['genome_params'], params['ea_params'], params['evolve_params'], alpha, fitness_mode, rng
@@ -64,71 +71,26 @@ if __name__ == "__main__":
         train_fraction=0.9,
         rng=rng
     )
-    champion_sympy_expression = champion.to_sympy()
 
     # evaluate hypothetical fitness of oja rule
     rng.seed(seed)
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
-        oja_rule, datasets, pc0_per_dataset, alpha, mode="variance", weight_mode=1, train_fraction=0.9,
-    rng=rng)
+        oja_rule, datasets, pc0_per_dataset, alpha, mode=fitness_mode, weight_mode=1, train_fraction=0.9, rng=rng)
 
-    # plot (works only for n_dimensions = 2 at the moment)
-    m = np.linspace(-1, 1, 1000)
-    champion_angle = np.zeros(n_datasets)
-    oja_angle = np.zeros(n_datasets)
-
-    for idx in range(n_datasets):
-
-        temp_champ_angle = compute_angle_weight_first_pc(
-            champion_weights_per_dataset[idx], pc0_per_dataset[idx], mode="degree"
-        )
-        champion_angle[idx] = calculate_smallest_angle(temp_champ_angle)
-        temp_oja_angle = compute_angle_weight_first_pc(
-            oja_weights_per_dataset[idx], pc0_per_dataset[idx], mode="degree"
-        )
-        oja_angle[idx] = calculate_smallest_angle(temp_oja_angle)
-
-        champion_as_line = np.zeros([num_dimensions, np.size(m)])
-        champion_as_line[0, :] = champion_weights_per_dataset[idx][0] * m
-        champion_as_line[1, :] = champion_weights_per_dataset[idx][1] * m
-
-        oja_as_line = np.zeros([num_dimensions, np.size(m)])
-        oja_as_line[0, :] = oja_weights_per_dataset[idx][0] * m
-        oja_as_line[1, :] = oja_weights_per_dataset[idx][1] * m
-
-        pc0_as_line = np.zeros([num_dimensions, np.size(m)])
-        pc0_as_line[0, :] = pc0_per_dataset[idx][0] * m
-        pc0_as_line[1, :] = pc0_per_dataset[idx][1] * m
-
-        # Todo: set learning rule as eg. plot title
-        fig, ax = plt.subplots()
-        plt.grid()
-        plt.plot(champion_as_line[0, :], champion_as_line[1, :])
-        plt.plot(oja_as_line[0, :], oja_as_line[1, :])
-        plt.plot(pc0_as_line[0, :], pc0_as_line[1, :])
-        plt.xlim(-3, 3)
-        plt.ylim(-3, 3)
-        plt.xlabel("w_0")
-        plt.ylabel("w_1")
-        plt.legend(
-            [
-                "champion angle:" + str(champion_angle[idx]),
-                "oja angle: " + str(oja_angle[idx]),
-                "true pc 1",
-            ]
-        )
-
-        if params['flag_save_figures']:
-            fig.savefig("figures/weight_vectors_seed" + str(seed+idx) + ".png")
-
-    if params['flag_save_data']:
-
-        save_data = {'param' : params,
-                     'champion':  champion,
+    save_data = {'param' : params,
+                     'champion':  {
+                         'champion': champion,
+                         'champion_fitness' : champion_fitness,
+                         'champion_weights' : champion_weights_per_dataset
+                         # Todo: will be removable once cgp #222 is merged
+                     },
+                    'oja': {
+                        'oja_fitness': oja_fitness,
+                        'oja_weights': oja_weights_per_dataset
+                    },
                      'history' : history,
-                     'champion_sympy' : champion_sympy_expression
                      }
 
-        # sympy expression purely for convenience
-        data_file = open('data/data_seed' + str(seed+idx) + '.pickle', 'wb')
-        pickle.dump(save_data, data_file)
+    # sympy expression purely for convenience
+    data_file = open('data/data_seed' + str(seed) + '.pickle', 'wb')
+    pickle.dump(save_data, data_file)
