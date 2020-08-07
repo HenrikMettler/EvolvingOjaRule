@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 
-matplotlib.use("TkAgg")
+#matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from functions import *
 
@@ -158,7 +158,7 @@ def run(
     learning_rate=0.005,
 ) -> None:
 
-    input_data = create_input_data(num_points, num_dimensions)
+    input_data, _ = create_input_data(num_points, num_dimensions)
     [weights, y] = learn_weights(input_data, learning_rule=learning_rule)
     plot_data(input_data, weights, y)
 
