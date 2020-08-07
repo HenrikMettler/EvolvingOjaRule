@@ -30,15 +30,12 @@ if __name__ == '__main__':
 
         'seed':  1,
 
-        'flag_save_figures': True,
-        'flag_save_data' : True,
         'data_params' : {
             'n_datasets' : 10,
             'num_dimensions' : 2,
             'num_points' : 5000,
             'max_var_input' : 1,
         },
-
 
         'fitness_mode' : "angle",
         'learning rate' : 0.005,
@@ -51,7 +48,7 @@ if __name__ == '__main__':
         'genome_params' : {
             'n_inputs': 3,
             'n_outputs': 1,
-            'n_columns': 100,
+            'n_columns': 1000,
             'n_rows': 1,
             'levels_back': None,
             'primitives': (cgp.Sub, cgp.Mul),  # cgp.Add, cgp.Div
@@ -69,24 +66,35 @@ if __name__ == '__main__':
         },
 
     }
-    params['md5_hash_sim_script'] = utils.md5_file(params['sim_script']) # consistency check
-    params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']] # consistency check
 
-    key = dicthash.generate_hash_from_dict(params)
+    params['md5_hash_sim_script'] = utils.md5_file(params['sim_script'])  # consistency check
+    params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']]  # consistency check
 
-    params['outputdir'] = os.path.join(os.getcwd(), key)
-    params['workingdir'] = os.getcwd()
+    learning_rates = [0.002, 0.005, 0.01, 0.02]
+    mutation_rates = [0.01, 0.05, 0.1]
 
-    submit_job = True
+    for learning_rate in learning_rates:
+        params['learning rate'] = learning_rate
 
-    print('preparing job')
-    print(' ', params['outputdir'])
+        for mutation_rate in mutation_rates:
 
-    utils.mkdirp(params['outputdir'])
-    utils.write_pickle(params, os.path.join(params['outputdir'], 'params.pickle'))
-    utils.create_jobfile(params)
-    utils.copy_file(params['sim_script'], params['outputdir'])
-    utils.copy_files(params['dependencies'], params['outputdir'])
-    if submit_job:
-        print('submitting job')
-        utils.submit_job(params)
+            params['population_params']['mutation_rate'] = mutation_rate
+
+            key = dicthash.generate_hash_from_dict(params)
+
+            params['outputdir'] = os.path.join(os.getcwd(), key)
+            params['workingdir'] = os.getcwd()
+
+            submit_job = True
+
+            print('preparing job')
+            print(' ', params['outputdir'])
+
+            utils.mkdirp(params['outputdir'])
+            utils.write_pickle(params, os.path.join(params['outputdir'], 'params.pickle'))
+            utils.create_jobfile(params)
+            utils.copy_file(params['sim_script'], params['outputdir'])
+            utils.copy_files(params['dependencies'], params['outputdir'])
+            if submit_job:
+                print('submitting job')
+                utils.submit_job(params)
