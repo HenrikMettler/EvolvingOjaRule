@@ -1,2 +1,9 @@
 log.txt
-/dir1
+*.png
+/figures
+/data
+analyze_data.py
+.idea/*
+params.pickle
+nsga2.py
+oja_neurodynex.py
