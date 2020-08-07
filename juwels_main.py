@@ -10,7 +10,7 @@ import os
 
 from learning_rules import oja_rule
 from functions import *
-from evolution import evolution, objective, calculate_fitness
+from evolution import evolution,  calculate_fitness
 
 
 if __name__ == "__main__":
@@ -36,16 +36,20 @@ if __name__ == "__main__":
     num_points = data_params['num_points']
     max_var_input = data_params['max_var_input']
 
-    # initialize datasets
+    # initialize datasets and initial weights
     datasets = []
     pc0_per_dataset = []
     pc0_empirical_per_dataset = []
+    initial_weights_per_dataset = []
 
     for idx in range(n_datasets):
         dataset, cov_mat = create_input_data(
             num_points, num_dimensions, max_var_input, seed + idx
         )
         datasets.append(dataset)
+
+        initial_weights = initialize_weights(num_dimensions, rng)
+        initial_weights_per_dataset.append(initial_weights)
 
         pc0 = calculate_eigenvector_for_largest_eigenvalue(cov_mat)
         pc0_per_dataset.append(pc0)
@@ -57,26 +61,23 @@ if __name__ == "__main__":
     fitness_mode = params['fitness_mode']
 
     [history, champion] = evolution(
-        datasets, pc0_per_dataset, params['population_params'],
-        params['genome_params'], params['ea_params'], params['evolve_params'], alpha, fitness_mode, rng
-    )
-    rng.seed(seed)
+        datasets, pc0_per_dataset, initial_weights_per_dataset, params['population_params'],
+        params['genome_params'], params['ea_params'], params['evolve_params'], alpha, fitness_mode)
+
+    # evaluate weights of champion (not passed down for non-re-evaluated champion)
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
     champion_fitness, champion_weights_per_dataset = calculate_fitness(
         champion_learning_rule,
         datasets,
         pc0_per_dataset,
+        initial_weights_per_dataset,
         alpha,
         mode=fitness_mode,
-        weight_mode=1,
-        train_fraction=0.9,
-        rng=rng
     )
 
     # evaluate hypothetical fitness of oja rule
-    rng.seed(seed)
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
-        oja_rule, datasets, pc0_per_dataset, alpha, mode=fitness_mode, weight_mode=1, train_fraction=0.9, rng=rng)
+        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode=fitness_mode)
 
     save_data = {'param' : params,
                      'champion':  {

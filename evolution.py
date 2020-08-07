@@ -5,21 +5,26 @@ import functools
 from functions import *
 
 
-def calculate_fitness(
-    current_learning_rule, datasets, pc0_per_dataset, alpha, mode, weight_mode, train_fraction, rng
-):
+def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode):
 
+    # hardcoded parameters
+    weight_mode = 1  # '1': diff to a squared norm of 1 ;'0': squared sum of the weights
+    train_fraction = 0.9
+
+    num_points = np.size(datasets[0], 0)
+
+    # initialize parameters
     first_term = 0
     weight_penalty = 0
     weights_final_per_dataset = []
-    num_points = np.size(datasets[0],0)
 
     for idx_dataset, dataset in enumerate(datasets):
 
         data_train = dataset[0 : int(train_fraction * num_points), :]
         data_validate = dataset[int(train_fraction * num_points) :, :]
 
-        [weights, _] = learn_weights(data_train, learning_rule=current_learning_rule, rng=rng)
+        [weights, _] = learn_weights(data_train, learning_rule=current_learning_rule,
+                                     initial_weights=initial_weights_per_dataset[idx_dataset])
         weights_final = weights[-1, :]
         if np.any(np.isnan(weights_final)):
             weights_final = -np.inf * np.ones(np.shape(weights_final))
@@ -37,9 +42,7 @@ def calculate_fitness(
                 output
             )  # for validation use only the last 100 elements
         elif mode == "angle":
-            Warning(
-                "Fitness function hyperparam alpha is currently adapted to using variance - use this mode carefully"
-            )
+            # Todo:  alpha is currently adapted to using variance needs change for angle?"
             angle = compute_angle_weight_first_pc(weights_final, pc0_per_dataset[idx_dataset])
             first_term += abs(np.cos(angle))
 
@@ -47,9 +50,9 @@ def calculate_fitness(
     return fitness, weights_final_per_dataset
 
 
-def objective(individual, datasets, pc0_per_dataset, alpha, mode, weight_mode, rng):
+def objective(individual, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode):
     """Objective function maximizing fitness (by maximizing variance or minimizing angle to PC0)
-      while punishing weights.
+      while punishing large weights.
 
     Parameters
     ----------
@@ -59,11 +62,6 @@ def objective(individual, datasets, pc0_per_dataset, alpha, mode, weight_mode, r
     pc0_per_dataset: List of first PC for every dataset
     alpha: relative weighting of the weight penalty term
     mode (string): Defines the first term of the fitness function options: 'variance', 'angle'
-    weight_mode (scalar):  : Defines the way of calculating the weight penalty term options:
-            '1': calculates the diff to a squared norm of 1
-            '0': calculates the squared sum of the weights
-   rng : numpy.RandomState
-            Random number generator instance to use for randomizing.
 
     Returns
     -------
@@ -75,27 +73,29 @@ def objective(individual, datasets, pc0_per_dataset, alpha, mode, weight_mode, r
         return individual
 
     current_learning_rule = individual.to_numpy()
-    train_fraction = 0.9
 
     fitness, weights_final_per_dataset = calculate_fitness(
-        current_learning_rule, datasets, pc0_per_dataset, alpha, mode, weight_mode, train_fraction, rng
-    )
+        current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode)
 
     individual.fitness = fitness
     individual.weights = weights_final_per_dataset
     return individual
 
 
-def evolution(
-    datasets, pc0_per_dataset, population_params, genome_params, ea_params, evolve_params, alpha, fitness_mode, rng
-):
+def evolution(datasets, pc0_per_dataset, initial_weights_per_dataset,
+              population_params, genome_params, ea_params, evolve_params, alpha, fitness_mode):
     """Execute CGP for given target function.
 
     Parameters
     ----------
     datasets : List of dataset(s)
+    pc0_per_dataset: First principal components (Eigenvectors of the co-variance matrix) for each dataset
+    initial_weights_per_dataset:
+        Initial weights for learning in each dataset
+        -> pre defined so that every individual (resp learning rule) has the same starting condition
     population_params: dict with n_parents, mutation_rate, seed
-    genome_params: dict with  n_inputs, n_outputs, n_columns, n_rows, levels_back, primitives (allowed function gene values)
+    genome_params:
+        dict with  n_inputs, n_outputs, n_columns, n_rows, levels_back, primitives (allowed function gene values)
     ea_params: dict with n_offsprings, n_breeding, tournament_size, n_processes,
     evolve_params: dict with max_generations, min_fitness
     alpha: Hyperparameter weighting the second term of the fitness function
@@ -120,14 +120,11 @@ def evolution(
         history["fitness_parents"].append(pop.fitness_parents())
         history["champion_genome"].append(
             pop.champion.genome
-        )  # use genome not dna to enable use of CartesianGraph(genome).to_numpy()
-        # history["weights_champion"].append(pop.champion.weights)
+        )
 
-    # Todo: check if there has to be some reset of the rng
     obj = functools.partial(
-        objective, datasets=datasets, pc0_per_dataset=pc0_per_dataset, alpha=alpha, mode=fitness_mode,
-        weight_mode=1, rng=rng
-    )
+        objective, datasets=datasets, pc0_per_dataset=pc0_per_dataset,
+        initial_weights_per_dataset=initial_weights_per_dataset, alpha=alpha, mode=fitness_mode)
 
     cgp.evolve(
         pop, obj, ea, **evolve_params, print_progress=True, callback=recording_callback,

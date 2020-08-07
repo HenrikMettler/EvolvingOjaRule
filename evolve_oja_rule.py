@@ -58,6 +58,7 @@ if __name__ == "__main__":
     datasets = []
     pc0_per_dataset = []
     pc0_empirical_per_dataset = []
+    initial_weights_per_dataset = []
 
     for idx in range(n_datasets):
         dataset, cov_mat = create_input_data(
@@ -65,34 +66,31 @@ if __name__ == "__main__":
         )
         datasets.append(dataset)
 
+        initial_weights = initialize_weights(num_dimensions, rng)
+        initial_weights_per_dataset.append(initial_weights)
+
         pc0 = calculate_eigenvector_for_largest_eigenvalue(cov_mat)
         pc0_per_dataset.append(pc0)
         pc0_empirical = compute_first_pc(dataset)
         pc0_empirical_per_dataset.append(pc0_empirical)
 
-    # Todo: check if there has to be some reset of the rng
     [history, champion] = evolution(
-        datasets, pc0_per_dataset, population_params, genome_params, ea_params, evolve_params, alpha, fitness_mode, rng
-    )
+        datasets, pc0_per_dataset, initial_weights_per_dataset,
+        population_params, genome_params, ea_params, evolve_params, alpha, fitness_mode)
     rng.seed(seed)
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
     champion_fitness, champion_weights_per_dataset = calculate_fitness(
         champion_learning_rule,
         datasets,
         pc0_per_dataset,
-        alpha,
-        mode=fitness_mode,
-        weight_mode=1,
-        train_fraction=0.9,
-        rng=rng
-    )
+        initial_weights_per_dataset,
+        alpha)
     champion_sympy_expression = champion.to_sympy()
 
     # evaluate hypothetical fitness of oja rule
     rng.seed(seed)
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
-        oja_rule, datasets, pc0_per_dataset, alpha, mode="variance", weight_mode=1, train_fraction=0.9,
-    rng=rng)
+        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode=fitness_mode)
 
     # plot (works only for n_dimensions = 2 at the moment)
     m = np.linspace(-1, 1, 1000)

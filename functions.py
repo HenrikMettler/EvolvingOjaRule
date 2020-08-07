@@ -6,13 +6,10 @@ import scipy
 from sklearn.decomposition import PCA
 
 
-def initialize_weights(initial_weights, n, rng):
+def initialize_weights(n, rng):
 
-    if initial_weights is None:
-        initial_weights = rng.uniform(-1, 1, size=n)
-
-    # rescale the initial weights to squared sum 1
-    return initial_weights / np.sqrt(np.sum(initial_weights ** 2))
+    initial_weights = rng.uniform(-1, 1, size=n)
+    return initial_weights / np.sqrt(np.sum(initial_weights ** 2))  # rescale to squared sum 1
 
 
 def create_input_data(num_points, num_dimensions, max_var_input, seed):
@@ -50,7 +47,7 @@ def calculate_eigenvector_for_largest_eigenvalue(cov_mat: np.ndarray) -> np.ndar
     return eigenvector
 
 
-def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate=0.005, rng=np.random.default_rng()):
+def learn_weights(input_data, learning_rule, initial_weights, learning_rate=0.005):
     """ learn weights
      Args:
         input_data (numpy array): An m by n array of datapoints.
@@ -61,7 +58,7 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
             - 'hebbian_rule'
             - 'normalized_hebbian_rule'
             - ('input_prompt_rule' not implemented yet)
-        initial_weights (float, optional): initial weight vector
+        initial_weights (float): initial weight vector
         learning_rate (float, optional): learning rate, default 0.005
 
     Returns:
@@ -71,7 +68,7 @@ def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate
     m = np.size(input_data, 0)
     n = np.size(input_data, 1)
 
-    w = initialize_weights(initial_weights, n, rng)
+    w = initial_weights
     y = np.zeros([m, 1])  # initialize y
     weights = np.zeros([m, n])
     for i, x in enumerate(input_data):
