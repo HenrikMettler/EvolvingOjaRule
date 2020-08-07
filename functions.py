@@ -1,6 +1,7 @@
 import numpy as np
 import sklearn.datasets as sklearn_datasets
 import warnings
+import scipy
 
 from sklearn.decomposition import PCA
 
@@ -32,8 +33,6 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed):
             "The ration of num_points to num_dimensions is low, should be at least 10"
         )
 
-    # Todo: calculate here eigendecomposition for cov_mat to calculate
-
     cov_mat = sklearn_datasets.make_spd_matrix(num_dimensions, seed)
     # rescale the cov_mat to have max_var_input as maximal element
     cov_mat = max_var_input * cov_mat / np.max(cov_mat)
@@ -41,7 +40,14 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed):
         np.zeros(num_dimensions), cov_mat, num_points
     )
 
-    return input_data
+    return input_data, cov_mat
+
+
+def calculate_eigenvector_for_largest_eigenvalue(cov_mat: np.ndarray) -> np.ndarray:
+    n_dim = np.size(cov_mat, 0)
+    eigenvalue, eigenvector = scipy.linalg.eigh(cov_mat, subset_by_index=[n_dim-1, n_dim-1])
+    eigenvector = np.reshape(eigenvector, (n_dim,)) # needed so that eigenvectors are of same shape as weight vectors
+    return eigenvector
 
 
 def learn_weights(input_data, learning_rule, initial_weights=None, learning_rate=0.005, rng=np.random.default_rng()):
