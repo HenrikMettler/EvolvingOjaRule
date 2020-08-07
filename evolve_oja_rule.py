@@ -28,6 +28,9 @@ if __name__ == "__main__":
     num_points = 5000
     max_var_input = 1
 
+    # learning parameters
+    learning_rate = 0.005
+
     # fitness parameters
     fitness_mode = "variance"
     alpha = num_dimensions * max_var_input  # hyperparameter for weighting fitness function terms
@@ -76,7 +79,8 @@ if __name__ == "__main__":
 
     [history, champion] = evolution(
         datasets, pc0_per_dataset, initial_weights_per_dataset,
-        population_params, genome_params, ea_params, evolve_params, alpha, fitness_mode)
+        population_params, genome_params, ea_params, evolve_params,
+        learning_rate, alpha, fitness_mode)
     rng.seed(seed)
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
     champion_fitness, champion_weights_per_dataset = calculate_fitness(
@@ -84,13 +88,13 @@ if __name__ == "__main__":
         datasets,
         pc0_per_dataset,
         initial_weights_per_dataset,
-        alpha)
+        learning_rate, alpha, fitness_mode)
     champion_sympy_expression = champion.to_sympy()
 
     # evaluate hypothetical fitness of oja rule
     rng.seed(seed)
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
-        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode=fitness_mode)
+        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, fitness_mode)
 
     # plot (works only for n_dimensions = 2 at the moment)
     m = np.linspace(-1, 1, 1000)

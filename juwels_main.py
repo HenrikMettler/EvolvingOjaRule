@@ -36,6 +36,9 @@ if __name__ == "__main__":
     num_points = data_params['num_points']
     max_var_input = data_params['max_var_input']
 
+    # extract learning parameters
+    learning_rate = params["learning rate"]
+
     # initialize datasets and initial weights
     datasets = []
     pc0_per_dataset = []
@@ -62,7 +65,8 @@ if __name__ == "__main__":
 
     [history, champion] = evolution(
         datasets, pc0_per_dataset, initial_weights_per_dataset, params['population_params'],
-        params['genome_params'], params['ea_params'], params['evolve_params'], alpha, fitness_mode)
+        params['genome_params'], params['ea_params'], params['evolve_params'],
+        learning_rate, alpha, fitness_mode)
 
     # evaluate weights of champion (not passed down for non-re-evaluated champion)
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
@@ -71,13 +75,14 @@ if __name__ == "__main__":
         datasets,
         pc0_per_dataset,
         initial_weights_per_dataset,
+        learning_rate,
         alpha,
-        mode=fitness_mode,
+        fitness_mode,
     )
 
     # evaluate hypothetical fitness of oja rule
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
-        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode=fitness_mode)
+        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, fitness_mode)
 
     save_data = {'param' : params,
                      'champion':  {

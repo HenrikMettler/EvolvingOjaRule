@@ -5,7 +5,8 @@ import functools
 from functions import *
 
 
-def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode):
+def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate,
+                      alpha, mode):
 
     # hardcoded parameters
     weight_mode = 1  # '1': diff to a squared norm of 1 ;'0': squared sum of the weights
@@ -24,7 +25,8 @@ def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_
         data_validate = dataset[int(train_fraction * num_points) :, :]
 
         [weights, _] = learn_weights(data_train, learning_rule=current_learning_rule,
-                                     initial_weights=initial_weights_per_dataset[idx_dataset])
+                                     initial_weights=initial_weights_per_dataset[idx_dataset],
+                                     learning_rate=learning_rate)
         weights_final = weights[-1, :]
         if np.any(np.isnan(weights_final)):
             weights_final = -np.inf * np.ones(np.shape(weights_final))
@@ -50,7 +52,7 @@ def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_
     return fitness, weights_final_per_dataset
 
 
-def objective(individual, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode):
+def objective(individual, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, mode):
     """Objective function maximizing fitness (by maximizing variance or minimizing angle to PC0)
       while punishing large weights.
 
@@ -75,7 +77,7 @@ def objective(individual, datasets, pc0_per_dataset, initial_weights_per_dataset
     current_learning_rule = individual.to_numpy()
 
     fitness, weights_final_per_dataset = calculate_fitness(
-        current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, alpha, mode)
+        current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, mode)
 
     individual.fitness = fitness
     individual.weights = weights_final_per_dataset
@@ -83,7 +85,8 @@ def objective(individual, datasets, pc0_per_dataset, initial_weights_per_dataset
 
 
 def evolution(datasets, pc0_per_dataset, initial_weights_per_dataset,
-              population_params, genome_params, ea_params, evolve_params, alpha, fitness_mode):
+              population_params, genome_params, ea_params, evolve_params,
+              learning_rate, alpha, fitness_mode):
     """Execute CGP for given target function.
 
     Parameters
@@ -124,7 +127,8 @@ def evolution(datasets, pc0_per_dataset, initial_weights_per_dataset,
 
     obj = functools.partial(
         objective, datasets=datasets, pc0_per_dataset=pc0_per_dataset,
-        initial_weights_per_dataset=initial_weights_per_dataset, alpha=alpha, mode=fitness_mode)
+        initial_weights_per_dataset=initial_weights_per_dataset, learning_rate=learning_rate,
+        alpha=alpha, mode=fitness_mode)
 
     cgp.evolve(
         pop, obj, ea, **evolve_params, print_progress=True, callback=recording_callback,

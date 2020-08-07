@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
 
         'fitness_mode' : "angle",
-
+        'learning rate' : 0.005,
 
         'population_params': {
             'n_parents': 1,
