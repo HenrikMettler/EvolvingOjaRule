@@ -4,7 +4,6 @@ import numpy as np
 import os
 import sys
 
-#sys.path.insert(0, os.path.expanduser('~/work/projects/python-gp'))  # Todo: check whether this can be removed
 import cgp
 
 sys.path.insert(0, '../../includes/')
@@ -27,7 +26,7 @@ if __name__ == '__main__':
         'account': 'hhd34',
         'partition': 'batch',
         'sim_script': 'juwels_main.py',
-        'dependencies': ['learning_rules.py', 'functions.py'],
+        'dependencies': ['learning_rules.py', 'functions.py', 'evolution.py'],
 
         'seed':  1,
 
