@@ -15,13 +15,17 @@ from evolution import evolution,  calculate_fitness
 
 if __name__ == "__main__":
 
+
     try:
-        seed_offset = int(sys.argv[1])  # For Juwels
+        seed_offset = int(sys.argv[2])  # For Juwels
     except IndexError:
         seed_offset = 1  # For offline debugging
 
     with open('params.pickle', 'rb') as f:
         params = pickle.load(f)
+
+    params['population_params']['mutation_rate'] = int(sys.argv[1])
+
     params['seed'] += seed_offset
     seed = params['seed']
 

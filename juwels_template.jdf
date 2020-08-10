@@ -16,11 +16,11 @@
 date
 echo `hostname`
 cd {outputdir}
-time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 0 &
-time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 10 &
-time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 20 &
-time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 30 &
-time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 40 &
-time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} 50 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} {mutation_rates[0]} 0 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} {mutation_rates[0]} 10 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} {mutation_rates[1]} 0 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} {mutation_rates[1]} 10 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} {mutation_rates[2]} 0 &
+time srun --ntasks 1 --exclusive --cpus-per-task {cpus-per-task} python ./{sim_script} {mutation_rates[2]} 10 &
 wait
 date
