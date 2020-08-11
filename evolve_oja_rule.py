@@ -53,7 +53,7 @@ if __name__ == "__main__":
     }
 
     evolve_params = {
-        "max_generations": 2,  # Todo: set to larger value
+        "max_generations": 10,  # Todo: set to larger value
         "min_fitness": 1000.0,
     }  #
 
@@ -82,6 +82,7 @@ if __name__ == "__main__":
         population_params, genome_params, ea_params, evolve_params,
         learning_rate, alpha, fitness_mode)
     rng.seed(seed)
+
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
     champion_fitness, champion_weights_per_dataset = calculate_fitness(
         champion_learning_rule,
@@ -89,6 +90,7 @@ if __name__ == "__main__":
         pc0_per_dataset,
         initial_weights_per_dataset,
         learning_rate, alpha, fitness_mode)
+
     champion_sympy_expression = champion.to_sympy()
 
     # evaluate hypothetical fitness of oja rule

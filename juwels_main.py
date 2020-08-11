@@ -20,7 +20,7 @@ if __name__ == "__main__":
     with open('params.pickle', 'rb') as f:
         params = pickle.load(f)
 
-    params['population_params']['mutation_rate'] = sys.argv[1]
+    params['population_params']['mutation_rate'] = float(sys.argv[1])
 
     params['seed'] += seed_offset
     seed = params['seed']
