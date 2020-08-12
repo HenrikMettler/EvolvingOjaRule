@@ -121,12 +121,12 @@ def evolution(datasets, pc0_per_dataset, initial_weights_per_dataset,
 
     history = {}
     history["fitness_parents"] = []
-    history["champion_genome"] = []
+    history["champion_sympy_expression"] = []
 
     def recording_callback(pop):
         history["fitness_parents"].append(pop.fitness_parents())
-        history["champion_genome"].append(
-            pop.champion.genome
+        history["champion_sympy_expression"].append(
+            pop.champion.to_sympy()
         )
 
     obj = functools.partial(

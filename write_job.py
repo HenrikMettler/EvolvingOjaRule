@@ -51,7 +51,7 @@ if __name__ == '__main__':
             'n_columns': 1000,
             'n_rows': 1,
             'levels_back': None,
-            'primitives': (cgp.Sub, cgp.Mul),  # cgp.Add, cgp.Div
+            'primitives': (cgp.Sub, cgp.Mul),
         },
 
         'ea_params' : {

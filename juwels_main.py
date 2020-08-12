@@ -98,7 +98,6 @@ if __name__ == "__main__":
                      'history' : history,
                      }
 
-    # sympy expression purely for convenience
-    filename = os.path.join(params['outputdir'], 'data.pickle')
+    filename = os.path.join(params['outputdir'], 'data' + str(seed_offset) +'.pickle')
     data_file = open(filename, 'wb')
     pickle.dump(save_data, data_file)
