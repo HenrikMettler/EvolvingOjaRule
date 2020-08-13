@@ -45,8 +45,12 @@ def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_
             )  # for validation use only the last 100 elements
         elif mode == "angle":
             # Todo:  alpha is currently adapted to using variance needs change for angle?"
-            angle = compute_angle_weight_first_pc(weights_final, pc0_per_dataset[idx_dataset])
-            first_term += abs(np.cos(angle))
+
+            if np.linalg.norm(weights_final) == 0:  # can not calculate angle for 0 - norm weights
+                first_term = 0
+            else:
+                angle = compute_angle_weight_first_pc(weights_final, pc0_per_dataset[idx_dataset])
+                first_term += abs(np.cos(angle))
 
     fitness = first_term - alpha * weight_penalty
     return fitness, weights_final_per_dataset
@@ -117,12 +121,12 @@ def evolution(datasets, pc0_per_dataset, initial_weights_per_dataset,
 
     history = {}
     history["fitness_parents"] = []
-    history["champion_genome"] = []
+    history["champion_sympy_expression"] = []
 
     def recording_callback(pop):
         history["fitness_parents"].append(pop.fitness_parents())
-        history["champion_genome"].append(
-            pop.champion.genome
+        history["champion_sympy_expression"].append(
+            pop.champion.to_sympy()
         )
 
     obj = functools.partial(

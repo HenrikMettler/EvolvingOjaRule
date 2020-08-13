@@ -157,7 +157,7 @@ def compute_difference_weights_first_pc(weights, pc1):
 
 
 def compute_angle_weight_first_pc(weight, pc0, mode="rad"):
-    weight_rescale = weight / np.linalg.norm(weight)  # Todo: deal with case when norm = 0
+    weight_rescale = weight / np.linalg.norm(weight)
     dot_prod = np.dot(pc0, weight_rescale)
     angle = np.arccos(dot_prod)
     if mode == "rad":

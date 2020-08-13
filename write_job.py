@@ -18,7 +18,7 @@ if __name__ == '__main__':
         'submit_command': 'sbatch',
         'jobfile_template': 'juwels_template.jdf',
         'jobname': 'evolving-oja-rule',
-        'wall_clock_limit': '00:10:00',
+        'wall_clock_limit': '24:00:00',
         'ntasks': 6,
         'cpus-per-task': 8,
         'n_nodes': 1,
@@ -41,17 +41,17 @@ if __name__ == '__main__':
         'learning rate' : 0.005,
 
         'population_params': {
-            'n_parents': 1,
+            'n_parents': 1,  # Todo: check values
             'mutation_rate': 0.05,
         },
 
         'genome_params' : {
             'n_inputs': 3,
-            'n_outputs': 1,
+            'n_outputs': 1,  # Todo check values
             'n_columns': 1000,
             'n_rows': 1,
             'levels_back': None,
-            'primitives': (cgp.Sub, cgp.Mul),  # cgp.Add, cgp.Div
+            'primitives': (cgp.Sub, cgp.Mul),
         },
 
         'ea_params' : {
@@ -61,8 +61,8 @@ if __name__ == '__main__':
         },
 
         'evolve_params' : {
-        'max_generations': 2,  # Todo: Set
-        'min_fitness': 1000.0,
+        'max_generations': 1000,  # Todo: Increase to 2000
+        'min_fitness': 100.0,   # Todo: change to 9.99
         },
 
     }
@@ -70,31 +70,30 @@ if __name__ == '__main__':
     params['md5_hash_sim_script'] = utils.md5_file(params['sim_script'])  # consistency check
     params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']]  # consistency check
 
-    learning_rates = [0.002, 0.005, 0.01, 0.02]
+    learning_rates = [0.002, 0.005, 0.01, 0.02]  # Todo: check lr with oja
     mutation_rates = [0.01, 0.05, 0.1]
 
     for learning_rate in learning_rates:
         params['learning rate'] = learning_rate
 
-        for mutation_rate in mutation_rates:
 
-            params['population_params']['mutation_rate'] = mutation_rate
+        params['mutation_rates'] = mutation_rates
 
-            key = dicthash.generate_hash_from_dict(params)
+        key = dicthash.generate_hash_from_dict(params)
 
-            params['outputdir'] = os.path.join(os.getcwd(), key)
-            params['workingdir'] = os.getcwd()
+        params['outputdir'] = os.path.join(os.getcwd(), key)
+        params['workingdir'] = os.getcwd()
 
-            submit_job = True
+        submit_job = True
 
-            print('preparing job')
-            print(' ', params['outputdir'])
+        print('preparing job')
+        print(' ', params['outputdir'])
 
-            utils.mkdirp(params['outputdir'])
-            utils.write_pickle(params, os.path.join(params['outputdir'], 'params.pickle'))
-            utils.create_jobfile(params)
-            utils.copy_file(params['sim_script'], params['outputdir'])
-            utils.copy_files(params['dependencies'], params['outputdir'])
-            if submit_job:
-                print('submitting job')
-                utils.submit_job(params)
+        utils.mkdirp(params['outputdir'])
+        utils.write_pickle(params, os.path.join(params['outputdir'], 'params.pickle'))
+        utils.create_jobfile(params)
+        utils.copy_file(params['sim_script'], params['outputdir'])
+        utils.copy_files(params['dependencies'], params['outputdir'])
+        if submit_job:
+            print('submitting job')
+            utils.submit_job(params)
