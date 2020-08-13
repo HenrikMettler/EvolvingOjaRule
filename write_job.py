@@ -38,17 +38,17 @@ if __name__ == '__main__':
         },
 
         'fitness_mode' : "angle",
-        'learning rate' : 0.005,
+        'learning rate' : 0.01,  # Todo: check lr with oja
 
         'population_params': {
-            'n_parents': 1,  # Todo: check values
+            'n_parents': 1,
             'mutation_rate': 0.05,
         },
 
         'genome_params' : {
             'n_inputs': 3,
-            'n_outputs': 1,  # Todo check values
-            'n_columns': 1000,
+            'n_outputs': 1,
+            'n_columns': 1000,  # Todo check values
             'n_rows': 1,
             'levels_back': None,
             'primitives': (cgp.Sub, cgp.Mul),
@@ -61,8 +61,8 @@ if __name__ == '__main__':
         },
 
         'evolve_params' : {
-        'max_generations': 1000,  # Todo: Increase to 2000
-        'min_fitness': 100.0,   # Todo: change to 9.99
+        'max_generations': 2000,
+        'min_fitness': 9.99,
         },
 
     }
@@ -70,14 +70,11 @@ if __name__ == '__main__':
     params['md5_hash_sim_script'] = utils.md5_file(params['sim_script'])  # consistency check
     params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']]  # consistency check
 
-    learning_rates = [0.002, 0.005, 0.01, 0.02]  # Todo: check lr with oja
-    mutation_rates = [0.01, 0.05, 0.1]
+    mutation_rates = [0.01, 0.02, 0.05, 0.1, 0.2]
 
-    for learning_rate in learning_rates:
-        params['learning rate'] = learning_rate
+    for mutation_rate in mutation_rates:
 
-
-        params['mutation_rates'] = mutation_rates
+        params['population_params']['mutation_rate'] = mutation_rate
 
         key = dicthash.generate_hash_from_dict(params)
 
