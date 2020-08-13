@@ -61,8 +61,8 @@ if __name__ == '__main__':
         },
 
         'evolve_params' : {
-        'max_generations': 1000,  # Todo: Good value?
-        'min_fitness': 100.0,
+        'max_generations': 1000,  # Todo: Increase to 2000
+        'min_fitness': 100.0,   # Todo: change to 9.99
         },
 
     }
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     params['md5_hash_sim_script'] = utils.md5_file(params['sim_script'])  # consistency check
     params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']]  # consistency check
 
-    learning_rates = [0.002, 0.005, 0.01, 0.02]
+    learning_rates = [0.002, 0.005, 0.01, 0.02]  # Todo: check lr with oja
     mutation_rates = [0.01, 0.05, 0.1]
 
     for learning_rate in learning_rates:
