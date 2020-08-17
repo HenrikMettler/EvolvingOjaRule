@@ -4,6 +4,8 @@ import warnings
 import scipy
 
 from sklearn.decomposition import PCA
+from sympy import symbols
+from sympy.utilities.lambdify import lambdify
 
 
 def initialize_weights(n, rng):
@@ -34,16 +36,14 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed):
     # rescale the cov_mat to have max_var_input as maximal element
     cov_mat = max_var_input * cov_mat / np.max(cov_mat)
     input_data = np.random.multivariate_normal(
-        np.zeros(num_dimensions), cov_mat, num_points
-    )
-
+        np.zeros(num_dimensions), cov_mat, num_points)
     return input_data, cov_mat
 
 
 def calculate_eigenvector_for_largest_eigenvalue(cov_mat: np.ndarray) -> np.ndarray:
     n_dim = np.size(cov_mat, 0)
     eigenvalue, eigenvector = scipy.linalg.eigh(cov_mat, subset_by_index=[n_dim-1, n_dim-1])
-    eigenvector = np.reshape(eigenvector, (n_dim,)) # needed so that eigenvectors are of same shape as weight vectors
+    eigenvector = np.reshape(eigenvector, (n_dim,))  # needed so that eigenvectors are of same shape as weight vectors
     return eigenvector
 
 
@@ -115,6 +115,24 @@ def learn_weights(input_data, learning_rule, initial_weights, learning_rate=0.00
                     w[idx] += (
                         learning_rate * graph_out
                     )
+
+    return weights, y
+
+
+def learn_weights_with_lambdify(dataset, learning_rule_as_lambdify, initial_weights, learning_rate):
+    m = np.size(dataset, 0)
+    n = np.size(dataset, 1)
+
+    w = initial_weights
+    y = np.zeros([m, 1])
+    weights = np.zeros([m, n])
+    for i, x in enumerate(dataset):
+        weights[i] = w
+        y[i] = np.dot(w, x)
+        for idx in range(n):
+            lambdify_out = learning_rule_as_lambdify(x[idx], w[idx], y[i])
+            # Catch if the graph returns nan, set final weights all to nan and return
+            w[idx] += learning_rate * lambdify_out
 
     return weights, y
 
@@ -194,3 +212,18 @@ def compute_accumulated_variance(y):
     for idx in range(1, np.size(y, 0)):
         acc_var_y[idx] = np.var(y[0:idx])
     return acc_var_y
+
+
+def replace_expression(champion_expression):
+    rep_x0_x = champion_expression.subs('x_0', 'x')
+    rep_x1_w = rep_x0_x.subs('x_1', 'w')
+    learning_rule_expression = rep_x1_w.subs('x_2', 'y')
+    return learning_rule_expression
+
+
+def create_function_from_expression(learning_rule_expression):
+    x = symbols('x')
+    w = symbols('w')
+    y = symbols('y')
+    learning_rule_as_function = lambdify([x, w, y], learning_rule_expression)
+    return learning_rule_as_function
