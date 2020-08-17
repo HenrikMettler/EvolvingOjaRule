@@ -33,11 +33,11 @@ if __name__ == '__main__':
         'data_params' : {
             'n_datasets' : 10,
             'num_dimensions' : 2,
-            'num_points' : 5000,
+            'num_points' : 2000,
             'max_var_input' : 1,
         },
 
-        'fitness_mode' : "angle",
+        'fitness_mode' : "variance",
         'learning rate' : 0.01,  # Todo: check lr with oja
 
         'population_params': {
