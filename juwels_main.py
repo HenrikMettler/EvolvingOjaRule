@@ -41,7 +41,7 @@ if __name__ == "__main__":
     datasets = []
     pc0_per_dataset = []
     pc0_empirical_per_dataset = []
-    initial_weights_per_dataset = []
+    initial_weights_per_dataset = np.zeros([n_datasets, num_dimensions])
 
     for idx in range(n_datasets):
         dataset, cov_mat = create_input_data(
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         datasets.append(dataset)
 
         initial_weights = initialize_weights(num_dimensions, rng)
-        initial_weights_per_dataset.append(initial_weights)
+        initial_weights_per_dataset[idx, :] = initial_weights
 
         pc0 = calculate_eigenvector_for_largest_eigenvalue(cov_mat)
         pc0_per_dataset.append(pc0)

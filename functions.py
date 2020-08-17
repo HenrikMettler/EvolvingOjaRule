@@ -68,7 +68,7 @@ def learn_weights(input_data, learning_rule, initial_weights, learning_rate=0.00
     m = np.size(input_data, 0)
     n = np.size(input_data, 1)
 
-    w = initial_weights
+    w = np.ndarray.copy(initial_weights)
     y = np.zeros([m, 1])  # initialize y
     weights = np.zeros([m, n])
     for i, x in enumerate(input_data):
@@ -123,7 +123,7 @@ def learn_weights_with_lambdify(dataset, learning_rule_as_lambdify, initial_weig
     m = np.size(dataset, 0)
     n = np.size(dataset, 1)
 
-    w = initial_weights
+    w = np.ndarray.copy(initial_weights)
     y = np.zeros([m, 1])
     weights = np.zeros([m, n])
     for i, x in enumerate(dataset):
