@@ -5,12 +5,22 @@ import functools
 from functions import *
 
 
-def calculate_fitness(current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate,
+@cgp.utils.disk_cache(
+    "fec_caching.pkl",
+    use_fec=True,
+    fec_seed=12345,
+    fec_min_value=-10.0,
+    fec_max_value=10.0,
+    fec_batch_size=5,
+)
+def calculate_fitness(individual, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate,
                       alpha, mode):
 
     # hardcoded parameters
     weight_mode = 1  # '1': diff to a squared norm of 1 ;'0': squared sum of the weights
     train_fraction = 0.9
+
+    current_learning_rule = individual.to_numpy()
 
     num_points = np.size(datasets[0], 0)
 
@@ -78,10 +88,8 @@ def objective(individual, datasets, pc0_per_dataset, initial_weights_per_dataset
     if individual.fitness is not None:
         return individual
 
-    current_learning_rule = individual.to_numpy()
-
     fitness, weights_final_per_dataset = calculate_fitness(
-        current_learning_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, mode)
+        individual, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, mode)
 
     individual.fitness = fitness
     individual.weights = weights_final_per_dataset
