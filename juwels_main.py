@@ -38,11 +38,8 @@ if __name__ == "__main__":
     alpha = num_dimensions * max_var_input
     fitness_mode = params['fitness_mode']
 
-    # initialize datasets and initial weights
-    datasets = []
-    pc0_per_dataset = []
-    pc0_empirical_per_dataset = []
-    initial_weights_per_dataset = np.zeros([n_datasets, num_dimensions])
+    # initialize datasets and initial weights, calculate first pc (pc0)
+    data = []
 
     for idx in range(n_datasets):
         dataset, cov_mat = create_input_data(
@@ -51,38 +48,30 @@ if __name__ == "__main__":
 
         data_train = dataset[0 : int(train_fraction * num_points), :]
         data_validate = dataset[int(train_fraction * num_points) :, :]
+        initial_weights = initialize_weights(num_dimensions, rng)
+        pc0 = calculate_eigenvector_for_largest_eigenvalue(cov_mat)
+        pc0_empirical = compute_first_pc(dataset)
 
-        datasets.append({
+        data.append({
             "data_train": data_train,
-            "data_validate": data_validate
+            "data_validate": data_validate,
+            "initial_weights": initial_weights,
+            "pc0": pc0,
+            #"pc0_empirical": pc0_empirical
         })
 
-        initial_weights = initialize_weights(num_dimensions, rng)
-        initial_weights_per_dataset[idx, :] = initial_weights
-
-        pc0 = calculate_eigenvector_for_largest_eigenvalue(cov_mat)
-        pc0_per_dataset.append(pc0)
-        pc0_empirical = compute_first_pc(dataset)
-        pc0_empirical_per_dataset.append(pc0_empirical)
-
     [history, champion] = evolution(
-        datasets, pc0_per_dataset, initial_weights_per_dataset, params['population_params'],
-        params['genome_params'], params['ea_params'], params['evolve_params'],
-        learning_rate, alpha, fitness_mode)
+        data=data, population_params=params['population_params'],
+        genome_params=params['genome_params'], ea_params=params['ea_params'], evolve_params=params['evolve_params'],
+        learning_rate=learning_rate, alpha=alpha, fitness_mode=fitness_mode)
 
     # evaluate weights of champion (not passed down for non-re-evaluated champion)
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
     champion_fitness, champion_weights_per_dataset = calculate_fitness(
-        champion_learning_rule,
-        datasets,
-        pc0_per_dataset,
-        initial_weights_per_dataset,
-        learning_rate,
-        alpha,
-        fitness_mode,
+        individual=champion,data=data,learning_rate=learning_rate,alpha=alpha, fitness_mode=fitness_mode,
     )
 
-    # evaluate hypothetical fitness of oja rule
+    # evaluate hypothetical fitness of oja rule # Todo: There is a problem now, since calculate fitness takes and individual and not a rule
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
         oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, fitness_mode)
 
