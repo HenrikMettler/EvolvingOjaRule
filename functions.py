@@ -94,7 +94,9 @@ def learn_weights(input_data, learning_rule, initial_weights, learning_rate=0.00
                 warnings.filterwarnings(
                     "ignore", message="invalid value encountered in subtract"
                 )
-
+                warnings.filterwarnings(
+                    "ignore", message="invalid value encountered in multiply"
+                )
                 warnings.filterwarnings(
                     "ignore", message="overflow encountered in multiply"
                 )

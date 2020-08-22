@@ -16,25 +16,19 @@ from functions import *
 def calculate_fitness(individual, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate,
                       alpha, mode):
 
-    # hardcoded parameters
+    # hardcoded parameter
     weight_mode = 1  # '1': diff to a squared norm of 1 ;'0': squared sum of the weights
-    train_fraction = 0.9
 
+    # extract learning_rule
     current_learning_rule = individual.to_numpy()
 
-    num_points = np.size(datasets[0], 0)
-
     # initialize parameters
-    first_term = 0
-    weight_penalty = 0
+    first_term, weight_penalty = 0,0
     weights_final_per_dataset = []
 
     for idx_dataset, dataset in enumerate(datasets):
 
-        data_train = dataset[0 : int(train_fraction * num_points), :]
-        data_validate = dataset[int(train_fraction * num_points) :, :]
-
-        [weights, _] = learn_weights(data_train, learning_rule=current_learning_rule,
+        [weights, _] = learn_weights(dataset['data_train'], learning_rule=current_learning_rule,
                                      initial_weights=initial_weights_per_dataset[idx_dataset],
                                      learning_rate=learning_rate)
         weights_final = weights[-1, :]
@@ -43,13 +37,10 @@ def calculate_fitness(individual, datasets, pc0_per_dataset, initial_weights_per
             weights_final_per_dataset.append(weights_final)
             return -np.inf, weights_final_per_dataset
 
-        weights_final_per_dataset.append(weights_final)
-
         weight_penalty += calc_weight_penalty(weights_final, weight_mode)
 
-        output = evaluate_output(data_validate, weights_final)
-
         if mode == "variance":
+            output = evaluate_output(dataset['data_validate'], weights_final)
             first_term += np.var(
                 output
             )  # for validation use only the last 100 elements
@@ -61,6 +52,8 @@ def calculate_fitness(individual, datasets, pc0_per_dataset, initial_weights_per
             else:
                 angle = compute_angle_weight_first_pc(weights_final, pc0_per_dataset[idx_dataset])
                 first_term += abs(np.cos(angle))
+
+        weights_final_per_dataset.append(weights_final)
 
     fitness = first_term - alpha * weight_penalty
     return fitness, weights_final_per_dataset
