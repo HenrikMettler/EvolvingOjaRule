@@ -26,7 +26,8 @@ if __name__ == '__main__':
         'account': 'hhd34',
         'partition': 'batch',
         'sim_script': 'juwels_main.py',
-        'dependencies': ['learning_rules.py', 'functions.py', 'evolution.py', 'Ind_oja_min_length.pickle'],
+        'dependencies': ['learning_rules.py', 'functions.py', 'evolution.py',
+                         'Ind_oja_min_length.pickle', 'Ind_oja_100.pickle'],
 
         'seed':  1,
 
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         },
 
         'fitness_mode' : "variance",
-        'learning rate' : 0.01,  # Todo: check lr with oja
+        'learning rate' : 0.01,
 
         'population_params': {
             'n_parents': 1,
@@ -48,7 +49,7 @@ if __name__ == '__main__':
         'genome_params' : {
             'n_inputs': 3,
             'n_outputs': 1,
-            'n_columns': 1000,  # Todo check values
+            'n_columns': 100,  # Todo Important: don't change -> compability with fixed genome
             'n_rows': 1,
             'levels_back': None,
             'primitives': (cgp.Sub, cgp.Mul),
@@ -62,7 +63,7 @@ if __name__ == '__main__':
 
         'evolve_params' : {
         'max_generations': 2000,
-        'min_fitness': 9.99,
+        'min_fitness': 20,
         },
 
     }

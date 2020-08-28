@@ -89,12 +89,13 @@ def objective(individual, data, learning_rate, alpha, mode):
     return individual
 
 
-def evolution(data, population_params, genome_params, ea_params, evolve_params,
+def evolution(ind_preset, data, population_params, genome_params, ea_params, evolve_params,
               learning_rate, alpha, fitness_mode):
     """Execute CGP for given target function.
 
     Parameters
     ----------
+    ind_preset:
     data: List(dict)
      Fields in dict:
         data_train: np.array
@@ -119,6 +120,7 @@ def evolution(data, population_params, genome_params, ea_params, evolve_params,
     """
 
     pop = cgp.Population(**population_params, genome_params=genome_params)
+    pop.parents[0].genome = ind_preset.genome
     ea = cgp.ea.MuPlusLambda(**ea_params)
 
     history = {}

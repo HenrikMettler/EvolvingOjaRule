@@ -22,6 +22,9 @@ if __name__ == "__main__":
 
     ind_oja_min = ind_oja_dict['Ind_oja_min']
 
+    with open('Ind_oja_100.pickle', 'rb') as f:
+        ind_100 = pickle.load(f)  # stored as variable not as dict
+
     with open('params.pickle', 'rb') as f:
         params = pickle.load(f)
 
@@ -65,7 +68,7 @@ if __name__ == "__main__":
             #"pc0_empirical": pc0_empirical
         })
 
-    [history, champion] = evolution(
+    [history, champion] = evolution(ind_preset=ind_100,
         data=data, population_params=params['population_params'],
         genome_params=params['genome_params'], ea_params=params['ea_params'], evolve_params=params['evolve_params'],
         learning_rate=learning_rate, alpha=alpha, fitness_mode=fitness_mode)
