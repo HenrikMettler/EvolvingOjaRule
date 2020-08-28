@@ -26,7 +26,7 @@ if __name__ == '__main__':
         'account': 'hhd34',
         'partition': 'batch',
         'sim_script': 'juwels_main.py',
-        'dependencies': ['learning_rules.py', 'functions.py', 'evolution.py'],
+        'dependencies': ['learning_rules.py', 'functions.py', 'evolution.py', 'Ind_oja_min_length.pickle'],
 
         'seed':  1,
 
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         'genome_params' : {
             'n_inputs': 3,
             'n_outputs': 1,
-            'n_columns': 1000,  # Todo check values
+            'n_columns': 100,  # Todo check values
             'n_rows': 1,
             'levels_back': None,
             'primitives': (cgp.Sub, cgp.Mul),
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         },
 
         'evolve_params' : {
-        'max_generations': 2,
+        'max_generations': 2000,
         'min_fitness': 9.99,
         },
 
@@ -71,11 +71,11 @@ if __name__ == '__main__':
     params['md5_hash_sim_script'] = utils.md5_file(params['sim_script'])  # consistency check
     params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']]  # consistency check
 
-    mutation_rates = [0.01, 0.02, 0.05, 0.1, 0.2]
+    max_var_inputs = [1,2,5]
 
-    for mutation_rate in mutation_rates:
+    for max_var_input in max_var_inputs:
 
-        params['population_params']['mutation_rate'] = mutation_rate
+        params['data_params']['max_var_input'] = max_var_input
 
         key = dicthash.generate_hash_from_dict(params)
 
