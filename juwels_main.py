@@ -76,7 +76,7 @@ if __name__ == "__main__":
         individual=champion,data=data,learning_rate=learning_rate,alpha=alpha, mode=fitness_mode,
     )
 
-    # evaluate hypothetical fitness of oja rule # Todo: There is a problem now, since calculate fitness takes and individual and not a rule
+    # evaluate hypothetical fitness of oja rule
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
         individual=ind_oja_min, data=data, learning_rate=learning_rate, alpha=alpha, mode=fitness_mode)
 
