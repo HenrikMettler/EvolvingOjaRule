@@ -35,10 +35,11 @@ if __name__ == '__main__':
             'num_dimensions' : 2,
             'num_points' : 2000,
             'max_var_input' : 1,
+            'data_interval': [-1,1]
         },
 
         'fitness_mode' : "variance",
-        'learning rate' : 0.01,  # Todo: check lr with oja
+        'learning rate' : 0.01,
 
         'population_params': {
             'n_parents': 1,
