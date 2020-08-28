@@ -71,7 +71,7 @@ if __name__ == '__main__':
     params['md5_hash_sim_script'] = utils.md5_file(params['sim_script'])  # consistency check
     params['md5_hash_dependencies'] = [utils.md5_file(fn) for fn in params['dependencies']]  # consistency check
 
-    mutation_rates = [0.01, 0.02, 0.05, 0.1, 0.2]
+    mutation_rates = [0.05, 0.1]
 
     for mutation_rate in mutation_rates:
 
