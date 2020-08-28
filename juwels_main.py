@@ -20,7 +20,7 @@ if __name__ == "__main__":
     with open('Ind_oja_min_length.pickle', 'rb') as f:
         ind_oja_dict = pickle.load(f)
 
-    ind_oja_min = ind_oja_dict['ind_oja_min']
+    ind_oja_min = ind_oja_dict['Ind_oja_min']
 
     with open('params.pickle', 'rb') as f:
         params = pickle.load(f)
