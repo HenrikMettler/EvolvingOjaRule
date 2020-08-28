@@ -35,10 +35,10 @@ if __name__ == "__main__":
     n_datasets = data_params['n_datasets']
     num_dimensions = data_params['num_dimensions']
     num_points = data_params['num_points']
-    #max_var_input = data_params['max_var_input']
-    max_var_input = 5
+    max_var_input = data_params['max_var_input']
+    #max_var_input = 5
     train_fraction = 0.9  # hardcoded
-    data_interval = data_params['data_interval']
+    data_mean = data_params['data_mean']
 
     # extract learning & fitness parameters
     learning_rate = params["learning rate"]
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     for idx in range(n_datasets):
         dataset, cov_mat = create_input_data(
-            num_points, num_dimensions, max_var_input, seed + idx, data_interval)
+            num_points, num_dimensions, max_var_input, seed + idx, data_mean)
 
         data_train = dataset[0 : int(train_fraction * num_points), :]
         data_validate = dataset[int(train_fraction * num_points) :, :]

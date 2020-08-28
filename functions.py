@@ -14,7 +14,7 @@ def initialize_weights(n, rng):
     return initial_weights / np.sqrt(np.sum(initial_weights ** 2))  # rescale to squared sum 1
 
 
-def create_input_data(num_points, num_dimensions, max_var_input, seed, data_interval):
+def create_input_data(num_points, num_dimensions, max_var_input, seed, data_mean = 0):
     """create an input data set for the learning rules
 
     Args:
@@ -36,7 +36,7 @@ def create_input_data(num_points, num_dimensions, max_var_input, seed, data_inte
     # rescale the cov_mat to have max_var_input as maximal element
     cov_mat = max_var_input * cov_mat / np.max(cov_mat)
     input_data = np.random.multivariate_normal(
-        np.zeros(num_dimensions), cov_mat, num_points)
+        data_mean*np.ones(num_dimensions), cov_mat, num_points)
     return input_data, cov_mat
 
 

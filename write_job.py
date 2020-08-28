@@ -35,10 +35,10 @@ if __name__ == '__main__':
             'num_dimensions' : 2,
             'num_points' : 2000,
             'max_var_input' : 1,
-            'data_interval': [-1,1]
+            'data_mean': 5
         },
 
-        'fitness_mode' : "variance",
+        'fitness_mode' : "angle",
         'learning rate' : 0.01,
 
         'population_params': {
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         },
 
         'evolve_params' : {
-        'max_generations': 2000,
+        'max_generations': 2,
         'min_fitness': 9.99,
         },
 
