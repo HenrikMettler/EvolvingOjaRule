@@ -14,7 +14,7 @@ def initialize_weights(n, rng):
     return initial_weights / np.sqrt(np.sum(initial_weights ** 2))  # rescale to squared sum 1
 
 
-def create_input_data(num_points, num_dimensions, max_var_input, seed):
+def create_input_data(num_points, num_dimensions, max_var_input, seed, data_interval):
     """create an input data set for the learning rules
 
     Args:
