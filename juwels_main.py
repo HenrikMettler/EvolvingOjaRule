@@ -17,6 +17,11 @@ if __name__ == "__main__":
 
     seed_offset = int(sys.argv[1])
 
+    with open('Ind_oja_min_length.pickle', 'rb') as f:
+        ind_oja_dict = pickle.load(f)
+
+    ind_oja_min = ind_oja_dict['ind_oja_min']
+
     with open('params.pickle', 'rb') as f:
         params = pickle.load(f)
 
@@ -68,12 +73,12 @@ if __name__ == "__main__":
     # evaluate weights of champion (not passed down for non-re-evaluated champion)
     champion_learning_rule = cgp.CartesianGraph(champion.genome).to_numpy()
     champion_fitness, champion_weights_per_dataset = calculate_fitness(
-        individual=champion,data=data,learning_rate=learning_rate,alpha=alpha, fitness_mode=fitness_mode,
+        individual=champion,data=data,learning_rate=learning_rate,alpha=alpha, mode=fitness_mode,
     )
 
     # evaluate hypothetical fitness of oja rule # Todo: There is a problem now, since calculate fitness takes and individual and not a rule
     oja_fitness, oja_weights_per_dataset = calculate_fitness(
-        oja_rule, datasets, pc0_per_dataset, initial_weights_per_dataset, learning_rate, alpha, fitness_mode)
+        individual=ind_oja_min, data=data, learning_rate=learning_rate, alpha=alpha, mode=fitness_mode)
 
     save_data = {'param' : params,
                      'champion':  {
