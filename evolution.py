@@ -40,7 +40,7 @@ def calculate_fitness(individual, data, learning_rate,
         weight_penalty += calc_weight_penalty(weights_final, weight_mode)
 
         if mode == "variance":
-            output = evaluate_output(data['data_validate'], weights_final)
+            output = evaluate_output(current_data['data_validate'], weights_final)
             first_term += np.var(
                 output
             )  # for validation use only the last 100 elements
