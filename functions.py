@@ -74,49 +74,46 @@ def learn_weights(input_data, learning_rule, initial_weights, learning_rate=0.00
     for i, x in enumerate(input_data):
         weights[i] = w
         y[i] = np.dot(w, x)  # output: postsynaptic firing rate of a linear neuron
-        try:  # this works for the standard learning rules (Oja, (norm) Hebb)
-            w = learning_rule(w, x, y[i], learning_rate)
-        except TypeError:
-            # calculate the weight update for every weight separately from the cartesian graph
-            # todo: can be done in vectors with .to_numpy function!
-            with warnings.catch_warnings():  # Todo: why they arise & if all caught
-                warnings.filterwarnings(
-                    "ignore",
-                    message="invalid value encountered in reduce "
-                    "arrmean = umr_sum(arr, axis, dtype, keepdims=True)",
-                )
-                warnings.filterwarnings(
-                    "ignore", message="overflow encountered in double_scalars"
-                )
-                warnings.filterwarnings(
-                    "ignore", message="invalid value encountered in double_scalars"
-                )
-                warnings.filterwarnings(
-                    "ignore", message="invalid value encountered in subtract"
-                )
-                warnings.filterwarnings(
-                    "ignore", message="invalid value encountered in multiply"
-                )
-                warnings.filterwarnings(
-                    "ignore", message="overflow encountered in multiply"
-                )
-                warnings.filterwarnings(
-                    "ignore", message="invalid value encountered in add"
-                )
-                warnings.filterwarnings(
-                    "ignore", message="invalid value encountered in reduce"
-                )
 
-                for idx in range(n):
-                    graph_in = np.array([[x[idx], w[idx], y[i]]])  #
-                    graph_out = learning_rule(graph_in)
-                    # Catch if the graph returns nan, set final weights all to nan and return
-                    if np.isnan(graph_out[0][0]):
-                        weights[-1] = graph_out[0][0]
-                        return weights, y
-                    w[idx] += (
-                        learning_rate * graph_out
-                    )
+        # calculate the weight update for every weight separately from the cartesian graph
+        with warnings.catch_warnings():  # Todo: why they arise & if all caught
+            warnings.filterwarnings(
+                "ignore",
+                message="invalid value encountered in reduce "
+                "arrmean = umr_sum(arr, axis, dtype, keepdims=True)",
+            )
+            warnings.filterwarnings(
+                "ignore", message="overflow encountered in double_scalars"
+            )
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in double_scalars"
+            )
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in subtract"
+            )
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in multiply"
+            )
+            warnings.filterwarnings(
+                "ignore", message="overflow encountered in multiply"
+            )
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in add"
+            )
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in reduce"
+            )
+
+            for idx in range(n):
+                graph_in = np.array([[x[idx], w[idx], y[i]]])  #
+                graph_out = learning_rule(graph_in)
+                # Catch if the graph returns nan, set final weights all to nan and return
+                if np.isnan(graph_out[0][0]):
+                    weights[-1] = graph_out[0][0]
+                    return weights, y
+                w[idx] += (
+                    learning_rate * graph_out
+                )
 
     return weights, y
 

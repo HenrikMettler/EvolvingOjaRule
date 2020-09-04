@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from functions import *
 
 
+# Todo: if reused: adapt to changed learn_weights
 def oja_rule(w: np.ndarray, x: np.ndarray, y, learning_rate=0.005) -> np.ndarray:
     """Oja linearized learning rule (Oja, 1982: eq.3)
 
