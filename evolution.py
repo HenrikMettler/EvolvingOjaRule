@@ -41,21 +41,20 @@ def calculate_fitness(individual, data, learning_rate,
 
         if mode == "variance":
             output = evaluate_output(current_data['data_validate'], weights_final)
-            first_term += np.var(
-                output
-            )  # for validation use only the last 100 elements
-        elif mode == "angle":
-            # Todo:  alpha is currently adapted to using variance needs change for angle?"
+            first_term += np.var(output)
 
+        elif mode == "angle":
             if np.linalg.norm(weights_final) == 0:  # can not calculate angle for 0 - norm weights
                 first_term = 0
             else:
-                angle = compute_angle_weight_first_pc(weights_final, current_data['pc0'])
-                first_term += abs(np.cos(angle))
+                angles = compute_angles_weights_first_pc(weights, current_data['pc0'])
+                angles_abs_cos = abs(np.cos(angles))
+                first_term += np.mean(angles_abs_cos)
 
         weights_final_per_dataset.append(weights_final)
 
     fitness = first_term - alpha * weight_penalty
+
     return fitness, weights_final_per_dataset
 
 
